@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "1092757220211",
+    "project_id": "humanplace-nbhp",
+    "storage_bucket": "humanplace-nbhp.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1092757220211:android:e7e1e263e2cc65c5853306",
+        "android_client_info": {
+          "package_name": "com.human_place.human_place_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1092757220211-31quvt8jf314qvrefkip6u0vtomeuftg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAOpb4iCA7yrPMvl2av6o9AP6BbxNMOn6Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1092757220211-31quvt8jf314qvrefkip6u0vtomeuftg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

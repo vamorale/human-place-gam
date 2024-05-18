@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>1092757220211-ipb8j4do9ju5ip30sn01jj9b7n96f6hb.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.1092757220211-ipb8j4do9ju5ip30sn01jj9b7n96f6hb</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>1092757220211-eqcp6b4ev0k69a6omp3btknoefto9ibv.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyAoMqLPutInoq35QnVTPEiBGWiSSJ403Zk</string>
+	<key>GCM_SENDER_ID</key>
+	<string>1092757220211</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.humanplace.humanPlaceApp</string>
+	<key>PROJECT_ID</key>
+	<string>humanplace-nbhp</string>
+	<key>STORAGE_BUCKET</key>
+	<string>humanplace-nbhp.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:1092757220211:ios:82c528105d9a1be5853306</string>
+</dict>
+</plist>
