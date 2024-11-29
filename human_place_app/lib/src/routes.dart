@@ -7,6 +7,7 @@ import 'package:human_place_app/src/screens/about_app.dart';
 import 'package:human_place_app/src/screens/pages/Guide_page.dart';
 import 'package:human_place_app/src/screens/plants-gallery.dart';
 import 'package:human_place_app/src/screens/splash_screen.dart';
+import 'package:human_place_app/src/screens/profile_screen.dart';
 
 int index = 0;
 int mode = 0;
@@ -24,5 +25,6 @@ final routes = {
   MainPage.routerName: (BuildContext context) => MainPage(),
   AboutPage.routerName: (BuildContext context) => AboutPage(),
   GaleriaPlantas.routerName: (BuildContext context) => GaleriaPlantas(),
-  GuidePage.routerName: (BuildContext context) => GuidePage()
+  GuidePage.routerName: (BuildContext context) => GuidePage(),
+  ProfileScreen.routerName: (BuildContext context) => ProfileScreen()
 };

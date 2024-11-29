@@ -519,6 +519,8 @@ class QuickAnswers extends StatefulWidget {
 class _QuickAnswersState extends State<QuickAnswers> {
   @override
   Widget build(BuildContext context) {
+    
+    //Size size = MediaQuery.of(context).size;
     //Controlador de Scroll de respuestas rapidas estandar
     ScrollController scrollControllerQuickReply = ScrollController();
 
@@ -744,11 +746,13 @@ class _QuickAnswersState extends State<QuickAnswers> {
       default:
         return Container(
           child: Column(
+            
             children: [
               //Mostrar fila scrolleable de respuestas
 
               RawScrollbar(
                 thumbVisibility: true,
+                //thickness: 40,    
                 controller: scrollControllerQuickReply,
                 thumbColor: CustomColors.newPurpleSecondary,
                 trackVisibility: true,
