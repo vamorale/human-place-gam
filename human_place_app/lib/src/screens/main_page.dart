@@ -8,6 +8,7 @@ import 'package:human_place_app/src/routes.dart';
 import 'package:human_place_app/src/screens/about_app.dart';
 import 'package:human_place_app/src/screens/home_screen.dart';
 import 'package:human_place_app/src/screens/plants-gallery.dart';
+import 'package:human_place_app/src/screens/profile_screen.dart';
 import 'package:human_place_app/src/services/firebase.dart';
 import 'package:human_place_app/src/services/plantas_control.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
@@ -148,57 +149,38 @@ class _MainPageState extends State<MainPage> {
             backgroundColor: CustomColors.grey,
 
 
-            //APPBAR: CONTIENE LOGO DE HUMAN PLACE CON MENU DEPLEGABLE
+            //APPBAR: CONTIENE MENU DEPLEGABLE
             //PARA NAVEGAR A OTRAS PAGINAS
 
             appBar: AppBar(
               automaticallyImplyLeading: false,
               backgroundColor: Colors.transparent,
-              elevation: 0,              
-              actions: [
+              elevation: 0,
 
               //ICONBUTTON: BOTÓN PARA ACCEDER AL PERFIL DEL USUARIO
 
-              Container(
-                margin: EdgeInsets.only(top: 10, right: size.width - 110),
+              leading: Container(
+                margin: EdgeInsets.only(top: 10, left: 10),
                 padding: EdgeInsets.all(0),
-                
-                
                 child: IconButton(
-                      onPressed: null, 
-                      icon: CircleAvatar(
-                        backgroundImage: AssetImage("assets/logos/perfil-1.png"),
-                        radius: 48,
-                      ),
-                      style: IconButton.styleFrom(
-                        //elevation: 1,
-                        padding: EdgeInsets.all(0),
-                        side: BorderSide(width: 2, color: Colors.black),
-                        fixedSize: Size.square(45),
-                      ),
-                    ),
-              ),    
+                  onPressed: () => {
+                    Navigator.pushNamed(
+                      context, ProfileScreen.routerName)
+                  }, 
+                  icon: CircleAvatar(
+                    backgroundImage: AssetImage("assets/logos/perfil-1.png"),
+                    radius: 48,
+                  ),
+                  style: IconButton.styleFrom(
+                    elevation: 1,
+                    padding: EdgeInsets.all(0),
+                    side: BorderSide(width: 2, color: Colors.black),
+                    fixedSize: Size.square(45),
+                  ),
+                ),
+              ),  
 
-               /*  Container(
-                  margin: EdgeInsets.only(top: 10, right: size.width - 130),
-                  padding: EdgeInsets.all(0),
-                  /* child: OutlinedButton.icon(
-                    onPressed: null,
-                    label: Text(""),
-                    icon: CircleAvatar(
-                      backgroundImage: AssetImage("assets/logos/perfil-1.png"),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      shape: CircleBorder(),
-                      padding: EdgeInsets.all(0),
-                      maximumSize: 50,
-                      backgroundColor: Colors.black38,
-                      //side: BorderSide(width: 1.0, color: Colors.black),
-                      //fixedSize: Size.square(45),
-                      //alignment: Center()
-                    ),
-                  ), */
-                  child: */ 
+              actions: [
                   
                 // CONTENEDOR CON MENU DESPLEGABLE
 
@@ -363,7 +345,7 @@ class _MainPageState extends State<MainPage> {
                                         arguments: {index = 2, mode = 4});
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.lightBlueAccent.withOpacity(0.5),
+                                    backgroundColor: Colors.lightBlueAccent.withOpacity(0.7),
                                     elevation: 0,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
                                   ),
@@ -396,40 +378,55 @@ class _MainPageState extends State<MainPage> {
                               margin: EdgeInsets.symmetric(horizontal: size.width / 12, vertical: 10),
                               width: size.width,
                               height: size.height / 7,
-                              child: ElevatedButton.icon(
-                                icon: Icon(
-                                  Icons.landscape,
-                                  size: 30,
-                                  color: Colors.black54,),
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                        context, HomeScreen.routerName,
-                                        arguments: {index = 2, mode = 6});
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.blueGrey.withOpacity(0.6),
-                                    elevation: 0,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
-                                  ),
-                                  label: ListTile(
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 5),
-                                    title: Text(
-                                      'Herramientas del propósito',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontFamily: 'sen-regular',
-                                        fontWeight: FontWeight.bold),
-                                      ),
-                                    subtitle: Text(
-                                      'Define tu objetivo diario o a largo plazo.',
-                                       style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontFamily: 'sen-regular'                            
-                                      ),
+                              child: Tooltip(
+                                message: '¡Próximamente!',
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.8),
+                                  borderRadius: BorderRadius.all(Radius.circular(5))
+                                ) ,
+                                triggerMode: TooltipTriggerMode.tap,
+                                height: 20,
+                                margin: EdgeInsets.all(10),
+                                preferBelow: true,
+                                showDuration: Duration(seconds: 2),
+                                child: ElevatedButton.icon(
+                                  icon: Icon(
+                                    Icons.landscape,
+                                    size: 30,
+                                    color: Colors.black54,),
+                                    onPressed: null,/* () {
+                                      Navigator.pushNamed(
+                                          context, HomeScreen.routerName,
+                                          arguments: {index = 2, mode = 6});
+                                    },*/
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.blueGrey.withOpacity(0.8),
+                                      foregroundColor: Colors.white,
+                                      disabledBackgroundColor: Colors.blueGrey.withOpacity(0.8),
+                                      //disabledForegroundColor: Colors.amberAccent,
+                                      elevation: 0,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
                                     ),
-                                  )),
+                                    label: ListTile(
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 5),
+                                      title: Text(
+                                        'Herramientas del propósito',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontFamily: 'sen-regular',
+                                          fontWeight: FontWeight.bold),
+                                        ),
+                                      subtitle: Text(
+                                        'Define tu objetivo diario o a largo plazo.',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 14,
+                                          fontFamily: 'sen-regular'                            
+                                        ),
+                                      ),
+                                    )),
+                              ),
                             ),
 
                             // ESPACIO INTERACTUABLE DEL PAISAJE
