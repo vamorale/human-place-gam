@@ -273,6 +273,7 @@ class _MainPageState extends State<MainPage> {
             body: Center(
               child: Column(
                 children: [
+
                   Stack(
                     alignment: Alignment.bottomLeft,
                     children: [
@@ -314,10 +315,24 @@ class _MainPageState extends State<MainPage> {
                             image: AssetImage('assets/images/gato_sam.png')),
                       ),
 
+                      //Easter Egg
+
+                      Visibility(
+                        visible: false,
+                        child: Positioned(
+                            left: 5,
+                            top: size.height/4.7,
+                            child: Container(
+                              width: 40,
+                              child: Image(
+                                image: AssetImage("assets/images/personajes/tucuquere.png")),
+                            )
+                          ),
+                      ),
+                            
                       //LISTA DE ESPACIOS INTERACTUABLES DEL PAISAJE
                       //NOTA: ESTA LISTA CONTIENE EL MENSAJE DE SAM
                       
-
                       Container(
                         width: size.width,
                         height: size.height,
@@ -373,6 +388,7 @@ class _MainPageState extends State<MainPage> {
 
                             // ESPACIO INTERACTUABLE DEL PAISAJE
                             //UTILIZADO PARA NAVEGAR A "HERRAMIENTAS DEl PROPÓSITO"
+                          
                             Container(
                               padding: EdgeInsets.all(5),
                               margin: EdgeInsets.symmetric(horizontal: size.width / 12, vertical: 10),
