@@ -77,6 +77,9 @@ flutter:
     - assets/icons/
     - assets/logos/
     - assets/images/
+    - assets/images/badge-ovejero/
+    - assets/images/personajes/
+    - assets/images/planta/
     - assets/animationsRive/
 
 flutter_icons:
