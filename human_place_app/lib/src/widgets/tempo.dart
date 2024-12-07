@@ -1,46 +1,62 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-class TimerDialog extends StatefulWidget {
-  final Function(int) onTimerComplete; // Callback cuando el temporizador termina
+class TimerWidget extends StatefulWidget {
+  final Duration duration;
+  final bool isTimerRunning; // Cambiado de `isTimerStarted` a `isTimerRunning`
 
-  const TimerDialog({Key? key, required this.onTimerComplete}) : super(key: key);
+  const TimerWidget({
+    Key? key,
+    required this.duration,
+    required this.isTimerRunning,
+  }) : super(key: key);
 
   @override
-  _TimerDialogState createState() => _TimerDialogState();
+  _TimerWidgetState createState() => _TimerWidgetState();
 }
 
-class _TimerDialogState extends State<TimerDialog> {
-  Duration _selectedDuration = Duration(minutes: 1);
+class _TimerWidgetState extends State<TimerWidget> {
+  late Duration _remainingTime;
   Timer? _timer;
-  int _remainingTime = 0;
-  final TextEditingController _textController = TextEditingController();
+  final String fuente = 'sen-regular';
 
   @override
   void initState() {
     super.initState();
-    _textController.text = _selectedDuration.inMinutes.toString();
+    _remainingTime = widget.duration;
+  }
+
+  @override
+  void didUpdateWidget(TimerWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.duration != widget.duration) {
+      _resetTimer(widget.duration);
+    }
+
+    if (oldWidget.isTimerRunning != widget.isTimerRunning) {
+      if (widget.isTimerRunning) {
+        _startTimer();
+      } else {
+        _pauseTimer();
+      }
+    }
   }
 
   void _startTimer() {
     _timer?.cancel();
-    setState(() {
-      _remainingTime = _selectedDuration.inSeconds;
-    });
-
     _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      if (_remainingTime > 0) {
+      if (_remainingTime > Duration.zero) {
         setState(() {
-          _remainingTime--;
+          _remainingTime -= Duration(seconds: 1);
         });
       } else {
         timer.cancel();
-        widget.onTimerComplete(_remainingTime); // Llama al callback
         showDialog(
           context: context,
           builder: (context) => AlertDialog(
-            title: Text("Time's up!"),
-            content: Text("The timer has completed."),
+            title: Text("¡Se acabó el tiempo!", textAlign: TextAlign.center,),
+            content: Text("El temporizador ha finalizado", textAlign: TextAlign.center,),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(),
@@ -53,101 +69,49 @@ class _TimerDialogState extends State<TimerDialog> {
     });
   }
 
-  void _showTimerConfigDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        Duration tempDuration = _selectedDuration;
+  void _pauseTimer() {
+    _timer?.cancel(); // Pausa el temporizador
+  }
 
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text("Configure Timer"),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text("Enter duration (minutes):"),
-                  TextField(
-                    controller: _textController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(),
-                      hintText: "Minutes (1 to 60)",
-                    ),
-                    onChanged: (value) {
-                      int? minutes = int.tryParse(value);
-                      if (minutes != null && minutes >= 1 && minutes <= 60) {
-                        setState(() {
-                          tempDuration = Duration(minutes: minutes);
-                        });
-                      }
-                    },
-                  ),
-                  SizedBox(height: 20),
-                  Slider(
-                    min: 1,
-                    max: 60,
-                    divisions: 59,
-                    label: "${tempDuration.inMinutes} minutes",
-                    value: tempDuration.inMinutes.toDouble(),
-                    onChanged: (value) {
-                      setState(() {
-                        tempDuration = Duration(minutes: value.toInt());
-                        _textController.text = value.toInt().toString();
-                      });
-                    },
-                  ),
-                ],
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: Text("Cancel"),
-                ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(tempDuration);
-                  },
-                  child: Text("Start Timer"),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    ).then((selectedDuration) {
-      if (selectedDuration != null && selectedDuration is Duration) {
-        setState(() {
-          _selectedDuration = selectedDuration;
-        });
-        _startTimer();
-      }
+  void _resetTimer(Duration duration) {
+    setState(() {
+      _remainingTime = duration;
     });
+    _timer?.cancel(); // Resetea el temporizador
   }
 
   @override
   void dispose() {
     _timer?.cancel();
-    _textController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return Theme(
+      data: Theme.of(context).copyWith(
+        textTheme: TextTheme(
+          bodyLarge: TextStyle(fontFamily: fuente, fontSize: 18),
+          bodyMedium: TextStyle(fontFamily: fuente, fontSize: 16),
+        ),
+      ), 
+    child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          "Remaining Time: ${(_remainingTime / 60).floor()} minutes ${_remainingTime % 60} seconds",
-          style: TextStyle(fontSize: 20),
-          textAlign: TextAlign.center,
+          "Tiempo restante:",
+          style: TextStyle(
+            fontSize: 18, 
+            //fontWeight: FontWeight.bold,
+            color: Colors.lightGreen, // Color del texto (estilo digital)
+            //fontFamily: "Courier",
+            ),
         ),
-        SizedBox(height: 20),
-        ElevatedButton(
-          onPressed: _showTimerConfigDialog,
-          child: Text("Configure Timer"),
+        Text(
+          "${_remainingTime.inMinutes}:${(_remainingTime.inSeconds % 60).toString().padLeft(2, '0')}",
+          style: TextStyle(fontSize: 36, color: Colors.white),
         ),
       ],
-    );
+    ));
   }
 }

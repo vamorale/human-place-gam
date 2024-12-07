@@ -80,7 +80,7 @@ class _TimePickerAlertDialogState extends State<TimePickerAlertDialog> {
   Widget build(BuildContext context) {
     return ElevatedButton(
       onPressed: () => _showTimePickerDialog(context),
-      child: Text("Escoger horario"),
+      child: Text("Escoger horario", style: TextStyle(fontFamily: 'sen-regular'),),
     );
   }
 }
