@@ -59,9 +59,11 @@ class _MainPageState extends State<MainPage> {
 
     if (now.hour > 5 && now.hour < 20) {
       stateDay = StateDay.Day;
+      print(stateDay);
       return 'sesión del día';
     } else {
       stateDay = StateDay.Night;
+      print(stateDay);
       return 'sesión nocturna';
     }
   }
@@ -297,7 +299,7 @@ class _MainPageState extends State<MainPage> {
                         width: size.width,
                         height: size.height,
                         child: Image(
-                            image: AssetImage('assets/images/bg.png'),
+                            image: stateDay == StateDay.Day ? AssetImage('assets/images/bg.png') : AssetImage('assets/images/night.png'),
                             fit: BoxFit.fill),
                       ),
 

@@ -6,9 +6,11 @@ import 'package:human_place_app/src/screens/main_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
  */
 import 'package:human_place_app/src/colors.dart';
+import 'package:human_place_app/src/screens/about_app.dart';
 import 'package:rive/rive.dart';
 import 'package:human_place_app/src/widgets/time_picker.dart';
 import 'package:human_place_app/src/widgets/tempo.dart';
+import 'package:human_place_app/src/widgets/habit_selector.dart';
 
 class HabitScreen extends StatefulWidget {
   static final routerName = '/habit-screen';
@@ -56,35 +58,136 @@ class _HabitScreenState extends State<HabitScreen> {
     }
   }
 
-  void _showTimer(BuildContext context) {
+  Duration _selectedDuration = Duration(minutes: 1);
+  bool _isTimerRunning = false;
+  final String fuente = 'sen-regular';
+
+  void _editTimer(BuildContext context) {
+    Duration tempDuration = _selectedDuration;
+
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          content: TimerDialog(
-            onTimerComplete: (remainingTime) {
-              // Manejar el evento cuando el temporizador termine
-              print("Timer completed with $remainingTime seconds left.");
-            },
-          ),
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text("Configurar tiempo",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontFamily: fuente)),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text("Ingresa la duración (en minutos):",
+                      style: TextStyle(fontFamily: fuente)),
+                  SizedBox(
+                    height: 5,
+                  ),
+                  TextField(
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: "Minutos (1 a 60)",
+                        labelStyle: TextStyle(fontFamily: fuente)),
+                    onChanged: (value) {
+                      int? minutes = int.tryParse(value);
+                      if (minutes != null && minutes >= 1 && minutes <= 60) {
+                        setState(() {
+                          tempDuration = Duration(minutes: minutes);
+                        });
+                      }
+                    },
+                  ),
+                  SizedBox(height: 20),
+                  Slider(
+                    min: 1,
+                    max: 60,
+                    divisions: 59,
+                    label: "${tempDuration.inMinutes} minutos",
+                    value: tempDuration.inMinutes.toDouble(),
+                    onChanged: (value) {
+                      setState(() {
+                        tempDuration = Duration(minutes: value.toInt());
+                      });
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text(
+                    "Cancelar",
+                    style: TextStyle(fontFamily: fuente),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(tempDuration);
+                  },
+                  child: Text(
+                    "Fijar tiempo",
+                    style: TextStyle(fontFamily: fuente),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
-    );
+    ).then((newDuration) {
+      if (newDuration != null && newDuration is Duration) {
+        setState(() {
+          _selectedDuration = newDuration;
+          _isTimerRunning =
+              false; // Detener el temporizador al cambiar la duración
+        });
+      }
+    });
+  }
+
+  String _selectedHabit = "Selecciona un hábito"; // Hábito inicial
+
+  void _updateSelectedHabit(String habit) {
+    setState(() {
+      _selectedHabit = habit;
+    });
+  }
+
+  /* void _startTimer() {
+    setState(() {
+      _isTimerStarted = true;
+    });
+  } */
+  void _toggleTimer() {
+    setState(() {
+      _isTimerRunning = !_isTimerRunning;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
     return Scaffold(
-        backgroundColor: Colors.indigo.shade900,
+        backgroundColor: Color.fromARGB(255, 1, 49, 26),
         appBar: AppBar(
-          title: Text('Mi rincón verde'),
+          backgroundColor: Color.fromARGB(255, 1, 49, 26),
+          title: Text(
+            'Mi rincón verde',
+            style: TextStyle(
+                fontFamily: fuente,
+                color: Colors.white,
+                fontWeight: FontWeight.bold),
+          ),
           centerTitle: true,
-          backgroundColor: Colors.lightGreen.withOpacity(0.9),
+          iconTheme: IconThemeData(
+            color: Colors.white, // Cambia el color de la flecha aquí
+          ),
+          //backgroundColor: Colors.lightGreen.withOpacity(0.9),
         ),
         body: Center(
           //mainAxisAlignment: MainAxisAlignment.center,
           child: Container(
+            width: size.width,
             decoration: BoxDecoration(
               image: DecorationImage(
                 image:
@@ -95,53 +198,237 @@ class _HabitScreenState extends State<HabitScreen> {
             child: Column(
               children: [
                 Container(
-                    margin: EdgeInsets.all(10),
-                    padding: EdgeInsets.all(10),
-                    color: Colors.amber,
-                    width: size.width,
+                  padding: EdgeInsets.all(5),
+                  margin: EdgeInsets.symmetric(vertical: 5),
+                  width: size.width - 40,
+                  decoration: BoxDecoration(
+                    color: Color(0xFF8B4513),
+                    borderRadius: BorderRadius.circular(5),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black, // Sombra alrededor del tablón
+                        blurRadius: 6,
+                        offset: Offset(0, 6),
+                      ),
+                    ],
+                    border: Border.all(
+                      color: Colors.black,
+                      width: 2,
+                    ),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "Mi hábito",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontFamily: fuente,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 20),
+                      ),
+                      Text(
+                        _selectedHabit,
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontFamily: fuente,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      ElevatedButton(
+                        onPressed: () => showHabitDialog(
+                          context: context,
+                          onHabitSelected: _updateSelectedHabit,
+                        ),
+                        child: Text(
+                          "Escoger hábito",
+                          style: TextStyle(fontFamily: fuente),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                    margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
+                    padding: EdgeInsets.all(5),
+                    //color: Colors.amber,
+                    width: size.width - 40,
+                    decoration: BoxDecoration(
+                      color: Colors.white, // Fondo blanco para la pizarra
+                      borderRadius:
+                          BorderRadius.circular(5), // Bordes redondeados
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(
+                              0.7), // Sombra alrededor de la pizarra
+                          spreadRadius: 2,
+                          blurRadius: 5,
+                          offset: Offset(0, 6), // Dirección de la sombra
+                        ),
+                      ],
+                      border: Border.all(
+                        color:
+                            Colors.black, // Marco negro alrededor de la pizarra
+                        width: 2,
+                      ),
+                    ),
                     child: Column(
                       children: [
                         Text(
                           "Hora de riego: ${_selectedTime.format(context)}",
-                          style: TextStyle(fontSize: 20),
+                          style: TextStyle(
+                              fontSize: 20,
+                              fontFamily: fuente,
+                              fontWeight: FontWeight.bold),
                         ),
-                        SizedBox(height: 10),
+                        SizedBox(height: 2),
                         TimePickerAlertDialog(
                           onTimeSelected: _onTimeSelected,
                         ),
                       ],
                     )),
-                Container(
-                    margin: EdgeInsets.all(10),
-                    padding: EdgeInsets.all(10),
-                    color: Colors.amber,
-                    width: size.width,
-                    child: Column(
-                      children: [
-                        Text(
-                          "Hora de riego: ${_selectedTime.format(context)}",
-                          style: TextStyle(fontSize: 20),
+                IntrinsicWidth(
+                  child: Container(
+                      //margin: EdgeInsets.only(bottom: 5),
+                      padding: EdgeInsets.all(5),
+                      //padding: EdgeInsets.symmetric(vertical: 20, horizontal: 40), // Espaciado interno
+                      decoration: BoxDecoration(
+                        color: Colors.black, // Fondo del reloj
+                        borderRadius:
+                            BorderRadius.circular(20), // Bordes redondeados
+                        border: Border.all(
+                          color: Colors.grey.shade800, // Borde exterior
+                          width: 3,
                         ),
-                        SizedBox(height: 10),
-                        ElevatedButton(
-                          onPressed: () => _showTimer(context),
-                          child: Text("Open Timer"),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(
+                                0.7), // Sombra alrededor de la pizarra
+                            spreadRadius: 2,
+                            blurRadius: 4,
+                            offset: Offset(0, 4), // Dirección de la sombra
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            "Temporizador",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontFamily: fuente,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          TimerWidget(
+                            duration: _selectedDuration,
+                            isTimerRunning:
+                                _isTimerRunning, // Control del estado del temporizador
+                          ),
+                          //SizedBox(height: 0),
+                          Row(
+                            mainAxisAlignment:
+                                MainAxisAlignment.center, // Centra los botones
+                            children: [
+                              ElevatedButton(
+                                onPressed: _editTimer == null
+                                    ? null
+                                    : () => _editTimer(context),
+                                style: ElevatedButton.styleFrom(
+                                  minimumSize:
+                                      Size(110, 40), // Ancho y alto específicos
+                                ),
+                                child: Text(
+                                  "Editar",
+                                  style: TextStyle(fontFamily: fuente),
+                                ),
+                              ),
+                              SizedBox(
+                                  width: 10), // Espaciado entre los botones
+                              ElevatedButton(
+                                onPressed: _toggleTimer,
+                                style: ElevatedButton.styleFrom(
+                                  minimumSize: Size(110, 40),
+                                  backgroundColor: _isTimerRunning
+                                      ? Colors.deepOrange.shade300
+                                      : Colors.lightGreenAccent.shade200,
+                                ),
+                                child: Text(
+                                  _isTimerRunning ? "Pausar" : "Empezar",
+                                  style: TextStyle(fontFamily: fuente),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      )),
+                ),
+
+                Stack(
+                  alignment: Alignment.bottomCenter,
+                  children: [
+                    if (_riveArtboard != null)
+                      Container(
+                        height: 210,
+                        width: 170,
+                        margin: EdgeInsets.only(top: 20),
+                        child: Rive(
+                          fit: BoxFit.cover,
+                          artboard: _riveArtboard!,
                         ),
-                      ],
-                    )),
-                Spacer(),
-                if (_riveArtboard != null)
-                  Container(
-                    height: 400,
-                    width: size.width - 80,
-                    child: Rive(
-                      fit: BoxFit.cover,
-                      artboard: _riveArtboard!,
+                      ),
+                    Container(
+                      margin: EdgeInsets.only(bottom: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.amber,
+                        borderRadius:
+                          BorderRadius.circular(5),
+                        border: Border.all(
+                          color: Colors.black,
+                          width: 2,
+                        ),
+                      ),
+
+                      //width: 250, // Ajusta el ancho de la caja de texto
+                      child: Text(
+                        'Día: ',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontFamily: fuente, fontSize: 16),
+                      ),
+                    ),
+                  ],
+                ),
+                /*  SizedBox(
+                  height: 50,
+                ), */
+                //Spacer(),
+                ElevatedButton(
+                  onPressed: () {
+                    _sliderInput?.value += 1;
+                    // Acción al presionar el botón
+                    /* ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text("¡Planta regada!"),
+                            ),
+                          ); */
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue, // Color de fondo
+                    //onPrimary: Colors.white, // Color del texto
+                    padding: EdgeInsets.symmetric(
+                        horizontal: 24, vertical: 12), // Tamaño del botón
+                    textStyle: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                SizedBox(
-                  height: 50,
-                )
+                  child: Text(
+                    "Regar",
+                    style: TextStyle(color: Colors.white, fontFamily: fuente),
+                  ),
+                ),
 
                 /* Slider(
             min: 0, // Valor mínimo del slider
