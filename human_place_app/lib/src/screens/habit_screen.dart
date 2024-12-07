@@ -1,10 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 /*import 'package:human_place_app/src/screens/home_screen.dart';
 import 'package:human_place_app/src/routes.dart';
 import 'package:human_place_app/src/screens/main_page.dart';
+*/
+
+import 'package:human_place_app/src/services/firebase_plant_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
- */
 import 'package:human_place_app/src/colors.dart';
 import 'package:human_place_app/src/screens/about_app.dart';
 import 'package:rive/rive.dart';
@@ -30,9 +33,18 @@ class _HabitScreenState extends State<HabitScreen> {
     });
   }
 
+  bool canWater = true;
+  int growthDays = 0;
+  int protectors = 3;
+  bool isPlantAlive = true;
+  late FirebasePlantService plantService;
+
   @override
   void initState() {
     super.initState();
+    final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+    plantService = FirebasePlantService(userId);
+    _fetchPlantState();
     // Cargar la animación .riv
     rootBundle.load('assets/animationsRive/growing_plant.riv').then(
       (data) async {
@@ -52,10 +64,67 @@ class _HabitScreenState extends State<HabitScreen> {
     );
   }
 
-  void _updateSlider(double value) {
+  /* void _updateSlider(double value) {
     if (_sliderInput != null) {
       _sliderInput!.value = value; // Actualizar el valor del input numérico
     }
+  } */
+ void _fetchPlantState() async {
+    final plantData = await plantService.fetchPlantState();
+
+    if (plantData != null) {
+      setState(() {
+        growthDays = plantData['growthDays'] ?? 0;
+        protectors = plantData['protectors'] ?? 3;
+        isPlantAlive = plantData['isPlantAlive'] ?? true;
+        canWater = _canWaterToday(plantData['lastWatered']);
+      });
+    } else {
+      _initializePlantState();
+    }
+  }
+  void _initializePlantState() async {
+    await plantService.initializePlantState(
+      growthDays: growthDays,
+      protectors: protectors,
+      isPlantAlive: isPlantAlive,
+    );
+  }
+  bool _canWaterToday(Timestamp? lastWatered) {
+    if (lastWatered == null) return true;
+    final now = DateTime.now();
+    final lastWateredDate = lastWatered.toDate();
+    return now.day != lastWateredDate.day ||
+        now.month != lastWateredDate.month ||
+        now.year != lastWateredDate.year;
+  }
+  void _waterPlant() async {
+    if (!canWater || !isPlantAlive) return;
+
+    setState(() {
+      growthDays++;
+      canWater = false;
+    });
+     await plantService.updatePlantState({
+      'growthDays': growthDays,
+      'lastWatered': Timestamp.now(),
+    });
+  }
+  void _passDayWithoutWater() async {
+    if (canWater) return;
+
+    setState(() {
+      if (protectors > 0) {
+        protectors--;
+      } else {
+        isPlantAlive = false;
+      }
+    });
+
+    await plantService.updatePlantState({
+      'protectors': protectors,
+      'isPlantAlive': isPlantAlive,
+    });
   }
 
   Duration _selectedDuration = Duration(minutes: 1);
@@ -404,7 +473,7 @@ class _HabitScreenState extends State<HabitScreen> {
                   height: 50,
                 ), */
                 //Spacer(),
-                ElevatedButton(
+                /* ElevatedButton(
                   onPressed: () {
                     _sliderInput?.value += 1;
                     // Acción al presionar el botón
@@ -428,7 +497,21 @@ class _HabitScreenState extends State<HabitScreen> {
                     "Regar",
                     style: TextStyle(color: Colors.white, fontFamily: fuente),
                   ),
+                ), */
+                if (!isPlantAlive)
+            Text('Your plant is dead. Start a new one!',
+                style: TextStyle(color: Colors.red, fontSize: 18)),
+          if (isPlantAlive)
+            Column(
+              children: [
+                Text('Growth Days: $growthDays'),
+                Text('Protectors: $protectors'),
+                ElevatedButton(
+                  onPressed: canWater ? _waterPlant : null,
+                  child: Text('Water Plant'),
                 ),
+              ],
+            ),
 
                 /* Slider(
             min: 0, // Valor mínimo del slider
