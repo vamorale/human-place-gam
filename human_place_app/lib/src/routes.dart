@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:human_place_app/src/screens/habit_screen.dart';
 import 'package:human_place_app/src/screens/home_screen.dart';
 import 'package:human_place_app/src/screens/intro_slider.dart';
 import 'package:human_place_app/src/screens/login_screen.dart';
@@ -26,5 +27,6 @@ final routes = {
   AboutPage.routerName: (BuildContext context) => AboutPage(),
   GaleriaPlantas.routerName: (BuildContext context) => GaleriaPlantas(),
   GuidePage.routerName: (BuildContext context) => GuidePage(),
-  ProfileScreen.routerName: (BuildContext context) => ProfileScreen()
+  ProfileScreen.routerName: (BuildContext context) => ProfileScreen(),
+  HabitScreen.routerName: (BuildContext context) => HabitScreen()
 };
