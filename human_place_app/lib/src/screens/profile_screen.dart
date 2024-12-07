@@ -4,10 +4,11 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 //import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:human_place_app/src/services/firebase.dart';
+//import 'package:human_place_app/src/services/firebase.dart';
 import 'package:human_place_app/src/colors.dart';
 import 'package:human_place_app/src/screens/main_page.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfileScreen extends StatefulWidget {
   static final routerName = '/profile-screen';
@@ -27,7 +28,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final currentUser = FirebaseAuth.instance.currentUser!;
   String uid = FirebaseAuth.instance.currentUser!.uid;
   var userName;
-  
+
+  String? _selectedAvatar;
+
+  final List<String> _avatars = [
+    'assets/images/personajes/huillin.png',
+    'assets/images/personajes/monito.png',
+    'assets/images/personajes/ovejero.png',
+    'assets/images/personajes/tucuquere.png',
+  ];
+
   Future gettest() async {
     User? user = await auth.currentUser;
 // ID token del usuario logueado APROVADO
@@ -57,33 +67,78 @@ class _ProfileScreenState extends State<ProfileScreen> {
     print('Response status: ${response.statusCode}');
     print('Response body: ${response.body}');
   }
-void initState() {
-    this.getName();
+ void initState() {
     super.initState();
+    _loadSelectedAvatar();
   }
-void getName() {
-    nameRef.doc(uid).get().then((value) {
-      var fields = value;
-      setState(() {
-        userName = fields['nombre'];
-        if (userName == 'null') {
-          userName = 'Usuario';
-        }
-      });
-    }).catchError((err) {
-      final User? user = auth.currentUser;
-      print('user: ' + user!.displayName.toString());
-      final uid = user.displayName.toString().split(" ");
-      userName = uid[0];
-      FirestoreService().updateUserName(userName);
+
+  /// Cargar el avatar seleccionado desde SharedPreferences
+  Future<void> _loadSelectedAvatar() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _selectedAvatar = prefs.getString('selectedAvatar');
     });
   }
+
+  /// Guardar el avatar seleccionado en SharedPreferences
+  Future<void> _saveSelectedAvatar(String avatar) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selectedAvatar', avatar);
+  }
+
+  void _showAvatarDialog() async {
+    final String? selected = await showDialog<String>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Selecciona un avatar'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: GridView.builder(
+              shrinkWrap: true,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10.0,
+                mainAxisSpacing: 10.0,
+              ),
+              itemCount: _avatars.length,
+              itemBuilder: (BuildContext context, int index) {
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.of(context).pop(_avatars[index]);
+                  },
+                  child: Image.asset(
+                    _avatars[index],
+                    fit: BoxFit.cover,
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text('Cancelar'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (selected != null) {
+      setState(() {
+        _selectedAvatar = selected;
+      });
+      await _saveSelectedAvatar(selected); // Guardar el avatar seleccionado
+    }
+  }
+
   Future<void>editField(String field) async {
     String newValue = "";
     await showDialog(
       context: context, 
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey,
+        backgroundColor: Colors.pinkAccent,
         title: Text(
           "Editar $field",
           style: const TextStyle(color: Colors.white),
@@ -93,7 +148,7 @@ void getName() {
           style: TextStyle(color: Colors.white),
           decoration: InputDecoration(
             hintText: "Ingresa el nuevo $field",
-            hintStyle: TextStyle(color: Colors.grey)
+            hintStyle: TextStyle(color: Colors.black)
           ),
           onChanged: (value) {
             newValue = value;
@@ -126,7 +181,6 @@ void getName() {
       }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final User? user = auth.currentUser;
@@ -135,6 +189,7 @@ void getName() {
 
     return Scaffold(
       backgroundColor: Colors.pinkAccent,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         centerTitle: true,
         title: SizedBox(
@@ -215,13 +270,34 @@ void getName() {
           //Texto de abajo
 
           //Imagen de perfil
-          Container(
+          /* Container(
             height: size.height / 9,
             margin: EdgeInsets.all(10),
             //width: 80,
             decoration:
                 BoxDecoration(shape: BoxShape.circle, color: Colors.amber),
-          ),
+          ), */
+
+          Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (_selectedAvatar != null)
+              CircleAvatar(
+                backgroundImage: AssetImage(_selectedAvatar!),
+                radius: 50,
+              )
+            else
+              CircleAvatar(
+                radius: 50,
+                child: Icon(Icons.person, size: 50),
+              ),
+            SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _showAvatarDialog,
+              child: Text('Seleccionar Avatar'),
+            ),
+          ],
+        ),
 
           Column(
               mainAxisAlignment: MainAxisAlignment.center,
