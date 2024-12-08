@@ -1,16 +1,19 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 /*import 'package:human_place_app/src/screens/home_screen.dart';
 import 'package:human_place_app/src/routes.dart';
-import 'package:human_place_app/src/screens/main_page.dart';
+import 'package:human_place_app/src/screens/main_page.dart';*/
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
- */
 import 'package:human_place_app/src/colors.dart';
 import 'package:human_place_app/src/screens/about_app.dart';
 import 'package:rive/rive.dart';
 import 'package:human_place_app/src/widgets/time_picker.dart';
 import 'package:human_place_app/src/widgets/tempo.dart';
 import 'package:human_place_app/src/widgets/habit_selector.dart';
+import 'package:human_place_app/src/services/firestore_planta.dart';
 
 class HabitScreen extends StatefulWidget {
   static final routerName = '/habit-screen';
@@ -19,9 +22,20 @@ class HabitScreen extends StatefulWidget {
 }
 
 class _HabitScreenState extends State<HabitScreen> {
-  //RIVE
-  SMIInput<double>? _sliderInput; // Controlador para el input numérico
-  Artboard? _riveArtboard;
+  final FirestoreService _firestoreService = FirestoreService();
+  bool _isButtonDisabled = false;
+
+  CollectionReference nameRef =
+      FirebaseFirestore.instance.collection('usuarios');
+
+  final FirebaseAuth auth = FirebaseAuth.instance;
+  final userId = FirebaseAuth.instance.currentUser!.uid;
+
+  SMIInput<double>? growInput;
+  StateMachineController? controller;
+
+  /* Artboard? _riveArtboard;
+  bool _isArtboardLoaded = false; */
   //TIMEPICKER
   TimeOfDay _selectedTime = TimeOfDay.now();
   void _onTimeSelected(TimeOfDay time) {
@@ -34,7 +48,7 @@ class _HabitScreenState extends State<HabitScreen> {
   void initState() {
     super.initState();
     // Cargar la animación .riv
-    rootBundle.load('assets/animationsRive/growing_plant.riv').then(
+    /* rootBundle.load('assets/animationsRive/growing_plant.riv').then(
       (data) async {
         final file = RiveFile.import(data);
         final artboard = file.mainArtboard;
@@ -48,15 +62,46 @@ class _HabitScreenState extends State<HabitScreen> {
         }
 
         setState(() => _riveArtboard = artboard);
+        _isArtboardLoaded = true;
       },
-    );
+    ); */
   }
 
-  void _updateSlider(double value) {
+  double calculateInputValue(int growthDays) {
+    if (growthDays == 0 || growthDays == 1) {
+      return 0;
+    } else if (growthDays == 2 || growthDays == 3) {
+      return 1;
+    } else if (growthDays == 4 || growthDays == 5) {
+      return 2;
+    } else if (growthDays == 6) {
+      return 3;
+    } else if (growthDays >= 7) {
+      return 4;
+    } else {
+      return 0; // Valor predeterminado si no coincide
+    }
+  }
+
+  /* void updateGrowthDays(int growthDays) {
+    if (_sliderInput != null) {
+      final inputValue = calculateInputValue(growthDays);
+      if (mounted) {
+      setState(() {
+        _sliderInput!.value = inputValue; // Actualizar el valor del input
+      });
+    }
+    }
+  } */
+/* 
+  void onGrowthDaysUpdated(int newGrowthDays) {
+    updateGrowthDays(newGrowthDays);
+  } */
+  /* void _updateSlider(double value) {
     if (_sliderInput != null) {
       _sliderInput!.value = value; // Actualizar el valor del input numérico
     }
-  }
+  } */
 
   Duration _selectedDuration = Duration(minutes: 1);
   bool _isTimerRunning = false;
@@ -145,12 +190,37 @@ class _HabitScreenState extends State<HabitScreen> {
     });
   }
 
-  String _selectedHabit = "Selecciona un hábito"; // Hábito inicial
+  //String _selectedHabit = "Selecciona un hábito"; // Hábito inicial
 
   void _updateSelectedHabit(String habit) {
-    setState(() {
+    /* setState(() {
       _selectedHabit = habit;
-    });
+    }); */
+    // Guardar el hábito en Firebase
+    _saveHabitToFirestore(habit);
+  }
+
+  Future<void> _saveHabitToFirestore(String habit) async {
+    try {
+      // Referencia al documento del usuario
+      final userRef =
+          FirebaseFirestore.instance.collection('usuarios').doc(userId);
+
+      // Actualizar o establecer el hábito seleccionado en el documento del usuario
+      await userRef.set(
+          {
+            'selectedHabit': habit,
+            'updatedAt':
+                FieldValue.serverTimestamp(), // Registrar cuándo se actualizó
+          },
+          SetOptions(
+              merge:
+                  true)); // Merge asegura que no se sobrescriban otros campos
+
+      print('Hábito guardado correctamente en Firebase.');
+    } catch (e) {
+      print('Error al guardar el hábito en Firebase: $e');
+    }
   }
 
   /* void _startTimer() {
@@ -220,30 +290,86 @@ class _HabitScreenState extends State<HabitScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        "Mi hábito",
+                        "Mi hábito diario",
                         style: TextStyle(
                             color: Colors.white,
                             fontFamily: fuente,
                             fontWeight: FontWeight.bold,
-                            fontSize: 20),
+                            fontSize: 18),
                       ),
-                      Text(
-                        _selectedHabit,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontFamily: fuente,
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
+                      StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('usuarios')
+                            .doc(userId)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return CircularProgressIndicator(); // Mostrar un indicador de carga
+                          }
+
+                          if (snapshot.hasError) {
+                            return Text(
+                              'Error al cargar el hábito.',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontFamily: fuente,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            );
+                          }
+
+                          if (!snapshot.hasData || !snapshot.data!.exists) {
+                            return Text(
+                              'No se ha seleccionado ningún hábito.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontFamily: fuente,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            );
+                          }
+
+                          final data =
+                              snapshot.data!.data() as Map<String, dynamic>?;
+                          final String? selectedHabit = data?['selectedHabit'];
+
+                          if (selectedHabit == null) {
+                            return Text(
+                              'No se ha seleccionado ningún hábito.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontFamily: fuente,
+                                color: Colors.white,
+                              ),
+                              textAlign: TextAlign.center,
+                            );
+                          }
+
+                          return Text(
+                            '$selectedHabit',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontFamily: fuente,
+                              color: Colors.white,
+                            ),
+                            textAlign: TextAlign.center,
+                          );
+                        },
                       ),
                       ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 5)),
                         onPressed: () => showHabitDialog(
                           context: context,
                           onHabitSelected: _updateSelectedHabit,
                         ),
                         child: Text(
                           "Escoger hábito",
-                          style: TextStyle(fontFamily: fuente),
+                          style: TextStyle(fontFamily: fuente, fontSize: 14),
                         ),
                       ),
                     ],
@@ -278,7 +404,7 @@ class _HabitScreenState extends State<HabitScreen> {
                         Text(
                           "Hora de riego: ${_selectedTime.format(context)}",
                           style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 16,
                               fontFamily: fuente,
                               fontWeight: FontWeight.bold),
                         ),
@@ -316,7 +442,7 @@ class _HabitScreenState extends State<HabitScreen> {
                           Text(
                             "Temporizador",
                             style: TextStyle(
-                              fontSize: 20,
+                              fontSize: 18,
                               fontFamily: fuente,
                               fontWeight: FontWeight.bold,
                               color: Colors.white,
@@ -337,6 +463,8 @@ class _HabitScreenState extends State<HabitScreen> {
                                     ? null
                                     : () => _editTimer(context),
                                 style: ElevatedButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
                                   minimumSize:
                                       Size(110, 40), // Ancho y alto específicos
                                 ),
@@ -351,13 +479,16 @@ class _HabitScreenState extends State<HabitScreen> {
                                 onPressed: _toggleTimer,
                                 style: ElevatedButton.styleFrom(
                                   minimumSize: Size(110, 40),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
                                   backgroundColor: _isTimerRunning
                                       ? Colors.deepOrange.shade300
                                       : Colors.lightGreenAccent.shade200,
                                 ),
                                 child: Text(
                                   _isTimerRunning ? "Pausar" : "Empezar",
-                                  style: TextStyle(fontFamily: fuente),
+                                  style: TextStyle(
+                                      fontFamily: fuente, fontSize: 14),
                                 ),
                               ),
                             ],
@@ -365,46 +496,404 @@ class _HabitScreenState extends State<HabitScreen> {
                         ],
                       )),
                 ),
+                Stack(alignment: Alignment.bottomCenter, children: [
+                  StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('usuarios')
+                          .doc(userId) // Reemplaza con el ID del usuario actual
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator(); // Indicador de carga
+                        }
 
-                Stack(
-                  alignment: Alignment.bottomCenter,
-                  children: [
-                    if (_riveArtboard != null)
-                      Container(
-                        height: 210,
-                        width: 170,
-                        margin: EdgeInsets.only(top: 20),
-                        child: Rive(
-                          fit: BoxFit.cover,
-                          artboard: _riveArtboard!,
-                        ),
-                      ),
-                    Container(
-                      margin: EdgeInsets.only(bottom: 10),
-                      decoration: BoxDecoration(
-                        color: Colors.amber,
-                        borderRadius:
-                          BorderRadius.circular(5),
-                        border: Border.all(
-                          color: Colors.black,
-                          width: 2,
-                        ),
-                      ),
+                        if (snapshot.hasError) {
+                          return Text('Error al cargar los datos.');
+                        }
 
-                      //width: 250, // Ajusta el ancho de la caja de texto
-                      child: Text(
-                        'Día: ',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontFamily: fuente, fontSize: 16),
-                      ),
-                    ),
-                  ],
-                ),
+                        if (!snapshot.hasData || !snapshot.data!.exists) {
+                          return Text('No hay datos disponibles.');
+                        }
+
+                        final userData =
+                            snapshot.data!.data() as Map<String, dynamic>?;
+                        final String? plantaActiva =
+                            userData?['plantaActiva'] as String?;
+
+                        // Verificar si plantaActiva está definido
+                        if (plantaActiva == null || plantaActiva.isEmpty) {
+                          return Text('No hay una planta activa seleccionada.');
+                        }
+
+                        // Consultar el documento en la subcolección 'plantas'
+                        return StreamBuilder<DocumentSnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('usuarios')
+                              .doc(userId)
+                              .collection('plant_growth')
+                              .doc(plantaActiva) // Usar el ID de plantaActiva
+                              .snapshots(),
+                          builder: (context, plantSnapshot) {
+                            if (plantSnapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return CircularProgressIndicator();
+                            }
+
+                            if (plantSnapshot.hasError) {
+                              return Text(
+                                  'Error al cargar los datos de la planta.');
+                            }
+
+                            if (!plantSnapshot.hasData ||
+                                !plantSnapshot.data!.exists) {
+                              return Text(
+                                  'No se encontraron datos para la planta activa.');
+                            }
+
+                            // Obtener los datos del documento de la planta
+                            final plantData = plantSnapshot.data!.data()
+                                as Map<String, dynamic>?;
+                            final int growthDays =
+                                plantData?['growthDays'] ?? 0;
+                                if (growInput != null) {
+              growInput!.value = calculateInputValue(growthDays);
+            }
+
+                            return Container(
+                              width: 210,
+                              height: 220,
+                              margin: EdgeInsets.symmetric(vertical: 20),
+                              child: RiveAnimation.asset(
+                                'assets/animationsRive/growing_plant.riv',
+                                fit: BoxFit.fitHeight,
+                                onInit: (artboard) {
+                                  // Inicializar el controlador de la animación
+                                  /* final controller =
+                                      StateMachineController.fromArtboard(
+                                          artboard,
+                                          'Plant'); // Cambia por el nombre de tu StateMachine
+                                  if (controller != null) {
+                                    artboard.addController(controller);
+
+                                    // Encontrar el input 'Grow' y asignarle el valor
+                                    final growInput =
+                                        controller.findInput<double>('Grow');
+                                    if (growInput != null) {
+                                      final inputValue =
+                                          calculateInputValue(growthDays);
+                                      growInput.value = inputValue;
+                                    }
+                                  } */
+                                 // Inicializar el controlador solo si no está ya configurado
+                  if (controller == null) {
+                    controller = StateMachineController.fromArtboard(
+                        artboard, 'Plant'); // Cambia por el nombre de tu StateMachine
+                    if (controller != null) {
+                      artboard.addController(controller!
+                          as RiveAnimationController<dynamic>);
+
+                      // Encontrar el input 'Grow' y asignarlo
+                      growInput = controller!.findInput<double>('Grow');
+                      if (growInput != null) {
+                        growInput!.value = calculateInputValue(growthDays);
+                      }
+                    }
+                  }
+                                },
+                              ),
+                            );
+                          },
+                        );
+                      }),
+                  StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('usuarios')
+                          .doc(userId)
+                          .snapshots(),
+                      builder: (context, userSnapshot) {
+                        if (userSnapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator(); // Indicador mientras se cargan datos
+                        }
+
+                        if (userSnapshot.hasError) {
+                          return Text('Error al cargar datos del usuario');
+                        }
+
+                        if (!userSnapshot.hasData ||
+                            !userSnapshot.data!.exists) {
+                          return Text(
+                              'No hay datos disponibles para el usuario');
+                        }
+
+                        // Obtener plantId del usuario
+                        final Map<String, dynamic>? userData =
+                            userSnapshot.data!.data() as Map<String, dynamic>?;
+
+                        final String? existingPlantId =
+                            userData?['plantaActiva'];
+
+                        if (userData == null ||
+                            !userData.containsKey('plantaActiva') ||
+                            userData['plantaActiva'] == null) {
+                          return ElevatedButton(
+                            onPressed: () async {
+                              // Lógica para plantar
+                              try {
+                                final firestoreService = FirestoreService();
+                                final plantId =
+                                    await firestoreService.addPlantGrowthData(
+                                  userId:
+                                      userId, // Reemplaza con el ID del usuario
+                                  growthDays:
+                                      0, // Inicializa en 0 días de crecimiento
+                                  wateringStartDate: DateTime
+                                      .now(), // Fecha actual como inicio
+                                  lastWateringDate: DateTime
+                                      .now(), // Fecha actual como último riego
+                                  protectors:
+                                      1, // Número de protectores iniciales
+                                  isAlive:
+                                      true, // Indica que la planta está viva
+                                );
+                                await FirebaseFirestore.instance
+                                    .collection('usuarios')
+                                    .doc(userId)
+                                    .update({
+                                  'plantaActiva': plantId,
+                                });
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content: Text(
+                                          'Nueva planta creada con ID: $plantId')),
+                                );
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                      content:
+                                          Text('Error al crear la planta: $e')),
+                                );
+                              }
+                            },
+                            child: Text('Plantar'),
+                          );
+                        } else {
+                          // Usar otro StreamBuilder para escuchar datos específicos de la planta activa
+                          return StreamBuilder<DocumentSnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection('usuarios')
+                                  .doc(userId)
+                                  .collection('plant_growth')
+                                  .doc(existingPlantId)
+                                  .snapshots(),
+                              builder: (context, plantSnapshot) {
+                                if (plantSnapshot.connectionState ==
+                                    ConnectionState.waiting) {
+                                  return CircularProgressIndicator(); // Indicador mientras se cargan datos
+                                }
+
+                                if (plantSnapshot.hasError) {
+                                  return Text(
+                                      'Error al cargar datos de crecimiento de la planta');
+                                }
+
+                                if (!plantSnapshot.hasData ||
+                                    !plantSnapshot.data!.exists) {
+                                  return Text(
+                                      'No hay datos disponibles para la planta');
+                                }
+
+                                // Obtener los días de crecimiento
+                                final data = plantSnapshot.data!.data();
+                                final Map<String, dynamic>? plantData =
+                                    data as Map<String, dynamic>?;
+
+                                if (plantData == null ||
+                                    !plantData.containsKey('growthDays')) {
+                                  return Text(
+                                      'No se encontró el dato growthDays');
+                                }
+
+                                final int growthDays = plantData['growthDays'];
+
+                                return Container(
+                                  margin: EdgeInsets.only(bottom: 10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber,
+                                    borderRadius: BorderRadius.circular(5),
+                                    border: Border.all(
+                                      color: Colors.black,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Día: $growthDays',
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                        fontFamily: fuente, fontSize: 16),
+                                  ),
+                                );
+                              });
+                        }
+                      })
+                ]),
+
+                //REGAR
+
+                StreamBuilder<DocumentSnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('usuarios')
+                        .doc(userId)
+                        .snapshots(),
+                    builder: (context, userSnapshot) {
+                      if (userSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return CircularProgressIndicator(); // Indicador mientras se cargan datos
+                      }
+
+                      if (userSnapshot.hasError) {
+                        return Text('Error al cargar datos del usuario');
+                      }
+
+                      if (!userSnapshot.hasData || !userSnapshot.data!.exists) {
+                        return Text('No hay datos disponibles para el usuario');
+                      }
+
+                      // Obtener plantId del usuario
+                      final Map<String, dynamic>? userData =
+                          userSnapshot.data!.data() as Map<String, dynamic>?;
+
+                      final String? existingPlantId = userData?['plantaActiva'];
+
+                      if (existingPlantId == null) {
+                        return Text('No hay planta activa');
+                      }
+
+                      // Usar otro StreamBuilder para escuchar datos específicos de la planta activa
+                      return StreamBuilder<DocumentSnapshot>(
+                          stream: FirebaseFirestore.instance
+                              .collection('usuarios')
+                              .doc(userId)
+                              .collection('plant_growth')
+                              .doc(existingPlantId)
+                              .snapshots(),
+                          builder: (context, plantSnapshot) {
+                            if (plantSnapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return CircularProgressIndicator(); // Indicador mientras se cargan datos
+                            }
+
+                            if (plantSnapshot.hasError) {
+                              return Text(
+                                  'Error al cargar datos de crecimiento de la planta');
+                            }
+
+                            if (!plantSnapshot.hasData ||
+                                !plantSnapshot.data!.exists) {
+                              return Text(
+                                  'No hay datos disponibles para la planta');
+                            }
+
+                            // Verificar lastWateringDate
+                            final data = plantSnapshot.data!.data();
+                            final Map<String, dynamic>? plantData =
+                                data as Map<String, dynamic>?;
+
+                            _isButtonDisabled = false;
+                            if (plantData != null &&
+                                plantData.containsKey('lastWateringDate')) {
+                              final dynamic rawTimestamp =
+                                  plantData['lastWateringDate'];
+
+                              if (rawTimestamp != null &&
+                                  rawTimestamp is Timestamp) {
+                                final DateTime lastWateringDate =
+                                    rawTimestamp.toDate();
+
+                                // Comparar solo la fecha (sin horas)
+                                final now = DateTime.now();
+                                if (lastWateringDate.year == now.year &&
+                                    lastWateringDate.month == now.month &&
+                                    lastWateringDate.day == now.day) {
+                                  _isButtonDisabled = true;
+                                }
+                                ;
+                              }
+                            } else {
+                              print(
+                                  "El campo 'lastWateringDate' es null o no es un Timestamp válido.");
+                            }
+                            ;
+                            return ElevatedButton(
+                              onPressed: _isButtonDisabled
+                                  ? null // Si está deshabilitado, el botón no tiene acción
+                                  : () async {
+                                      try {
+                                        // Instanciar el servicio Firestore
+                                        final firestoreService =
+                                            FirestoreService();
+
+                                        // Variable para almacenar el valor de plantId si ya existe
+                                        String? existingPlantId;
+
+                                        // Verificar si el usuario ya tiene un plantId activo
+                                        final plantIdExists =
+                                            !(await _firestoreService
+                                                .verificarDatoFirestore(
+                                                    "usuarios",
+                                                    userId,
+                                                    "plantaActiva",
+                                                    false));
+
+                                        if (plantIdExists) {
+                                          final docSnapshot =
+                                              await FirebaseFirestore.instance
+                                                  .collection('usuarios')
+                                                  .doc(userId)
+                                                  .get();
+                                          existingPlantId = docSnapshot
+                                              .data()?['plantaActiva'];
+                                          // Si ya existe plantId o no es false, actualizar los datos de crecimiento
+                                          await firestoreService
+                                              .updatePlantGrowthData(
+                                                  userId, existingPlantId);
+
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                                content: Text(
+                                                    'Datos de crecimiento actualizados correctamente')),
+                                          );
+                                        } else {
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            SnackBar(
+                                                content: Text(
+                                                    'Debes plantar primero')),
+                                          );
+                                        }
+                                      } catch (e) {
+                                        // Manejo de errores
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                              content: Text(
+                                                  'Error al procesar los datos: $e')),
+                                        );
+                                      }
+                                    },
+                              child: Text('Regar'),
+                            );
+                          });
+                    }),
+
                 /*  SizedBox(
                   height: 50,
                 ), */
                 //Spacer(),
-                ElevatedButton(
+                /* ElevatedButton(
                   onPressed: () {
                     _sliderInput?.value += 1;
                     // Acción al presionar el botón
@@ -429,7 +918,7 @@ class _HabitScreenState extends State<HabitScreen> {
                     style: TextStyle(color: Colors.white, fontFamily: fuente),
                   ),
                 ),
-
+ */
                 /* Slider(
             min: 0, // Valor mínimo del slider
             max: 4, // Valor máximo del slider
@@ -442,5 +931,10 @@ class _HabitScreenState extends State<HabitScreen> {
             ),
           ),
         ));
+  }
+  void dispose() {
+    controller = null;
+    growInput = null;
+    super.dispose();
   }
 }

@@ -101,15 +101,15 @@ class _TimerWidgetState extends State<TimerWidget> {
         Text(
           "Tiempo restante:",
           style: TextStyle(
-            fontSize: 18, 
+            fontSize: 16, 
             //fontWeight: FontWeight.bold,
             color: Colors.lightGreen, // Color del texto (estilo digital)
-            //fontFamily: "Courier",
+            fontFamily: "sen-regular",
             ),
         ),
         Text(
           "${_remainingTime.inMinutes}:${(_remainingTime.inSeconds % 60).toString().padLeft(2, '0')}",
-          style: TextStyle(fontSize: 36, color: Colors.white),
+          style: TextStyle(fontSize: 30, color: Colors.white, fontFamily: 'sen-regular'),
         ),
       ],
     ));
