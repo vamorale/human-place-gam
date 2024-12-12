@@ -35,16 +35,20 @@ if (keystorePropertiesFile.exists()) {
 
   android {
               
-    compileSdkVersion 33
+    compileSdkVersion 34
     ndkVersion "25.1.8937393"
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
 
     defaultConfig {
         applicationId "com.human_place.human_place_app"
-        minSdkVersion 19
-        targetSdkVersion 33
+        minSdkVersion 23
+        targetSdkVersion 34
         multiDexEnabled true
         versionCode 20
         versionName '2.0.0'
@@ -74,4 +78,8 @@ dependencies {
     implementation 'com.google.firebase:firebase-analytics-ktx'
     implementation "androidx.multidex:multidex:2.0.1"
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+}
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:deprecation"
+    options.compilerArgs << "-Xlint:unchecked"
 }

@@ -1,5 +1,4 @@
 import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 /*import 'package:human_place_app/src/screens/home_screen.dart';
@@ -14,7 +13,7 @@ import 'package:human_place_app/src/widgets/time_picker.dart';
 import 'package:human_place_app/src/widgets/tempo.dart';
 import 'package:human_place_app/src/widgets/habit_selector.dart';
 import 'package:human_place_app/src/services/firestore_planta.dart';
-
+import 'package:human_place_app/src/screens/character_screen.dart';
 class HabitScreen extends StatefulWidget {
   static final routerName = '/habit-screen';
   @override
@@ -23,6 +22,7 @@ class HabitScreen extends StatefulWidget {
 
 class _HabitScreenState extends State<HabitScreen> {
   final FirestoreService _firestoreService = FirestoreService();
+  bool isLoading = true;
   bool _isButtonDisabled = false;
 
   CollectionReference nameRef =
@@ -34,8 +34,6 @@ class _HabitScreenState extends State<HabitScreen> {
   SMIInput<double>? growInput;
   StateMachineController? controller;
 
-  /* Artboard? _riveArtboard;
-  bool _isArtboardLoaded = false; */
   //TIMEPICKER
   TimeOfDay _selectedTime = TimeOfDay.now();
   void _onTimeSelected(TimeOfDay time) {
@@ -47,24 +45,33 @@ class _HabitScreenState extends State<HabitScreen> {
   @override
   void initState() {
     super.initState();
-    // Cargar la animación .riv
-    /* rootBundle.load('assets/animationsRive/growing_plant.riv').then(
-      (data) async {
-        final file = RiveFile.import(data);
-        final artboard = file.mainArtboard;
+    //_checkPlantStatusOnLoad();
+  }
 
-        // Vincular los inputs del controlador a los inputs del archivo Rive
-        var controller = StateMachineController.fromArtboard(artboard, 'Plant');
-        if (controller != null) {
-          artboard.addController(controller);
-          _sliderInput =
-              controller.findInput<double>('Grow'); // Nombre del input numérico
-        }
+  Future<void> _checkPlantStatusOnLoad() async {
+    // Llamar a la función checkPlantStatus con el userId
+    await _firestoreService.checkPlantStatus(userId);
+    final int daysAchieved =
+        7; // Ejemplo: obtener el valor desde Firebase o lógica local
+    await _firestoreService.updateMedallas(userId, daysAchieved);
 
-        setState(() => _riveArtboard = artboard);
-        _isArtboardLoaded = true;
-      },
-    ); */
+    // Cambiar el estado para indicar que la verificación se completó
+    setState(() {
+      isLoading = false;
+    });
+  }
+  void _showCharacterScreen(BuildContext context) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => CharacterScreen(
+          imagePath: 'assets/images/personajes/huillin.png', // Ruta de la imagen en assets
+          text: '¡Has completado la acción!',
+          onActionCompleted: () {
+            Navigator.of(context).pop(); // Cerrar la pantalla
+          },
+        ),
+      ),
+    );
   }
 
   double calculateInputValue(int growthDays) {
@@ -82,26 +89,6 @@ class _HabitScreenState extends State<HabitScreen> {
       return 0; // Valor predeterminado si no coincide
     }
   }
-
-  /* void updateGrowthDays(int growthDays) {
-    if (_sliderInput != null) {
-      final inputValue = calculateInputValue(growthDays);
-      if (mounted) {
-      setState(() {
-        _sliderInput!.value = inputValue; // Actualizar el valor del input
-      });
-    }
-    }
-  } */
-/* 
-  void onGrowthDaysUpdated(int newGrowthDays) {
-    updateGrowthDays(newGrowthDays);
-  } */
-  /* void _updateSlider(double value) {
-    if (_sliderInput != null) {
-      _sliderInput!.value = value; // Actualizar el valor del input numérico
-    }
-  } */
 
   Duration _selectedDuration = Duration(minutes: 1);
   bool _isTimerRunning = false;
@@ -190,12 +177,7 @@ class _HabitScreenState extends State<HabitScreen> {
     });
   }
 
-  //String _selectedHabit = "Selecciona un hábito"; // Hábito inicial
-
   void _updateSelectedHabit(String habit) {
-    /* setState(() {
-      _selectedHabit = habit;
-    }); */
     // Guardar el hábito en Firebase
     _saveHabitToFirestore(habit);
   }
@@ -223,11 +205,6 @@ class _HabitScreenState extends State<HabitScreen> {
     }
   }
 
-  /* void _startTimer() {
-    setState(() {
-      _isTimerStarted = true;
-    });
-  } */
   void _toggleTimer() {
     setState(() {
       _isTimerRunning = !_isTimerRunning;
@@ -252,10 +229,8 @@ class _HabitScreenState extends State<HabitScreen> {
           iconTheme: IconThemeData(
             color: Colors.white, // Cambia el color de la flecha aquí
           ),
-          //backgroundColor: Colors.lightGreen.withOpacity(0.9),
         ),
         body: Center(
-          //mainAxisAlignment: MainAxisAlignment.center,
           child: Container(
             width: size.width,
             decoration: BoxDecoration(
@@ -271,6 +246,7 @@ class _HabitScreenState extends State<HabitScreen> {
                   padding: EdgeInsets.all(5),
                   margin: EdgeInsets.symmetric(vertical: 5),
                   width: size.width - 40,
+                  alignment: Alignment.center,
                   decoration: BoxDecoration(
                     color: Color(0xFF8B4513),
                     borderRadius: BorderRadius.circular(5),
@@ -375,50 +351,185 @@ class _HabitScreenState extends State<HabitScreen> {
                     ],
                   ),
                 ),
-                Container(
-                    margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
-                    padding: EdgeInsets.all(5),
-                    //color: Colors.amber,
-                    width: size.width - 40,
-                    decoration: BoxDecoration(
-                      color: Colors.white, // Fondo blanco para la pizarra
-                      borderRadius:
-                          BorderRadius.circular(5), // Bordes redondeados
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(
-                              0.7), // Sombra alrededor de la pizarra
-                          spreadRadius: 2,
-                          blurRadius: 5,
-                          offset: Offset(0, 6), // Dirección de la sombra
+                Center(
+                child: 
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                  Container(
+                    alignment: Alignment.center,
+                      margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
+                      padding: EdgeInsets.all(0),
+                      width: (size.width / 2) - 20,
+                      decoration: BoxDecoration(
+                        color: Colors.white, // Fondo blanco para la pizarra
+                        borderRadius:
+                            BorderRadius.circular(5), // Bordes redondeados
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(
+                                0.7), // Sombra alrededor de la pizarra
+                            spreadRadius: 2,
+                            blurRadius: 5,
+                            offset: Offset(0, 6), // Dirección de la sombra
+                          ),
+                        ],
+                        border: Border.all(
+                          color: Colors
+                              .black, // Marco negro alrededor de la pizarra
+                          width: 2,
                         ),
-                      ],
-                      border: Border.all(
-                        color:
-                            Colors.black, // Marco negro alrededor de la pizarra
-                        width: 2,
                       ),
-                    ),
-                    child: Column(
-                      children: [
-                        Text(
-                          "Hora de riego: ${_selectedTime.format(context)}",
-                          style: TextStyle(
-                              fontSize: 16,
-                              fontFamily: fuente,
-                              fontWeight: FontWeight.bold),
-                        ),
-                        SizedBox(height: 2),
-                        TimePickerAlertDialog(
+                      child: Column(
+                        children: [
+                          Text(
+                            "Hora de riego:",
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontFamily: fuente,
+                                fontWeight: FontWeight.bold),
+                          ),
+                          Text(
+                            "${_selectedTime.format(context)}",
+                            style: TextStyle(
+                                fontSize: 16,
+                                fontFamily: fuente,
+                                fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 2),
+                          /* TimePickerAlertDialog(
                           onTimeSelected: _onTimeSelected,
-                        ),
-                      ],
-                    )),
+                        ), */
+                          StreamBuilder<DocumentSnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('usuarios')
+                                .doc(userId)
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState ==
+                                  ConnectionState.waiting) {
+                                return CircularProgressIndicator(); // Mostrar un indicador de carga
+                              }
+
+                              if (snapshot.hasError) {
+                                return Text(
+                                  'Error al cargar el hábito.',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontFamily: fuente,
+                                    color: Colors.white,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                );
+                              }
+
+                              if (!snapshot.hasData || !snapshot.data!.exists) {
+                                return Text(
+                                  'No se ha seleccionado ningún hábito.',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: fuente,
+                                    color: Colors.white,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                );
+                              }
+
+                              final data = snapshot.data!.data()
+                                  as Map<String, dynamic>?;
+                              final String? selectedHabit =
+                                  data?['selectedHabit'];
+
+                              if (selectedHabit == null) {
+                                return Text(
+                                  'No se ha seleccionado ningún hábito.',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontFamily: fuente,
+                                    color: Colors.white,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                );
+                              }
+
+                              return IconButton(
+                                icon: Icon(Icons.alarm),
+                                onPressed: () {
+                                  _onTimeSelected(_selectedTime);
+                                },
+                              );
+                            },
+                          ),
+                        ],
+                      )),
+                  Container(
+                    margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
+                    //padding: EdgeInsets.all(5),
+                    width: (size.width / 2) - 20,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: Colors.lightGreen.shade400,
+                      border: Border.all(color: Colors.green, width: 2),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                    child: Column(children: [
+                      StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('usuarios')
+                            .doc(userId)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) {
+                            return CircularProgressIndicator();
+                          }
+
+                          final userData =
+                              snapshot.data!.data() as Map<String, dynamic>;
+                          final int protectores = userData['protectores'] ?? 0;
+                          final int semillas = userData['semillas'] ?? 0;
+
+                          return Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text('Semillas: $semillas',
+                                  style: TextStyle(
+                                fontSize: 16,
+                                fontFamily: fuente,
+                                fontWeight: FontWeight.bold),
+                          ),
+                              Text('Protectores: $protectores',
+                                  style: TextStyle(
+                                fontSize: 16,
+                                fontFamily: fuente,
+                                fontWeight: FontWeight.bold),
+                          ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5) ),
+                                onPressed: () async {
+                                  final firestoreService = FirestoreService();
+                                  await firestoreService
+                                      .convertirSemillasAProtectores(userId);
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                          '¡Conversión intentada! Verifica tu saldo y protectores.'),
+                                    ),
+                                  );
+                                },
+                                child: Text('Convertir'),
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+                    ]),
+                  ),
+                ]),),
                 IntrinsicWidth(
                   child: Container(
-                      //margin: EdgeInsets.only(bottom: 5),
                       padding: EdgeInsets.all(5),
-                      //padding: EdgeInsets.symmetric(vertical: 20, horizontal: 40), // Espaciado interno
                       decoration: BoxDecoration(
                         color: Colors.black, // Fondo del reloj
                         borderRadius:
@@ -453,7 +564,6 @@ class _HabitScreenState extends State<HabitScreen> {
                             isTimerRunning:
                                 _isTimerRunning, // Control del estado del temporizador
                           ),
-                          //SizedBox(height: 0),
                           Row(
                             mainAxisAlignment:
                                 MainAxisAlignment.center, // Centra los botones
@@ -496,6 +606,7 @@ class _HabitScreenState extends State<HabitScreen> {
                         ],
                       )),
                 ),
+                SizedBox(height: 5),
                 Stack(alignment: Alignment.bottomCenter, children: [
                   StreamBuilder<DocumentSnapshot>(
                       stream: FirebaseFirestore.instance
@@ -556,50 +667,38 @@ class _HabitScreenState extends State<HabitScreen> {
                                 as Map<String, dynamic>?;
                             final int growthDays =
                                 plantData?['growthDays'] ?? 0;
-                                if (growInput != null) {
-              growInput!.value = calculateInputValue(growthDays);
-            }
+                            if (growInput != null) {
+                              growInput!.value =
+                                  calculateInputValue(growthDays);
+                            }
 
                             return Container(
                               width: 210,
                               height: 220,
-                              margin: EdgeInsets.symmetric(vertical: 20),
+                              margin: EdgeInsets.symmetric(vertical: 20, horizontal: 10),
                               child: RiveAnimation.asset(
                                 'assets/animationsRive/growing_plant.riv',
                                 fit: BoxFit.fitHeight,
                                 onInit: (artboard) {
-                                  // Inicializar el controlador de la animación
-                                  /* final controller =
-                                      StateMachineController.fromArtboard(
-                                          artboard,
-                                          'Plant'); // Cambia por el nombre de tu StateMachine
-                                  if (controller != null) {
-                                    artboard.addController(controller);
+                                  // Inicializar el controlador solo si no está ya configurado
+                                  if (controller == null) {
+                                    controller =
+                                        StateMachineController.fromArtboard(
+                                            artboard,
+                                            'Plant'); // Cambia por el nombre de tu StateMachine
+                                    if (controller != null) {
+                                      artboard.addController(controller!
+                                          as RiveAnimationController<dynamic>);
 
-                                    // Encontrar el input 'Grow' y asignarle el valor
-                                    final growInput =
-                                        controller.findInput<double>('Grow');
-                                    if (growInput != null) {
-                                      final inputValue =
-                                          calculateInputValue(growthDays);
-                                      growInput.value = inputValue;
+                                      // Encontrar el input 'Grow' y asignarlo
+                                      growInput =
+                                          controller!.findInput<double>('Grow');
+                                      if (growInput != null) {
+                                        growInput!.value =
+                                            calculateInputValue(growthDays);
+                                      }
                                     }
-                                  } */
-                                 // Inicializar el controlador solo si no está ya configurado
-                  if (controller == null) {
-                    controller = StateMachineController.fromArtboard(
-                        artboard, 'Plant'); // Cambia por el nombre de tu StateMachine
-                    if (controller != null) {
-                      artboard.addController(controller!
-                          as RiveAnimationController<dynamic>);
-
-                      // Encontrar el input 'Grow' y asignarlo
-                      growInput = controller!.findInput<double>('Grow');
-                      if (growInput != null) {
-                        growInput!.value = calculateInputValue(growthDays);
-                      }
-                    }
-                  }
+                                  }
                                 },
                               ),
                             );
@@ -827,6 +926,17 @@ class _HabitScreenState extends State<HabitScreen> {
                             }
                             ;
                             return ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                disabledForegroundColor: Colors.black45,
+                                backgroundColor: Colors.blue, // Color de fondo
+                                padding: EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12), // Tamaño del botón
+                                textStyle: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
                               onPressed: _isButtonDisabled
                                   ? null // Si está deshabilitado, el botón no tiene acción
                                   : () async {
@@ -860,6 +970,8 @@ class _HabitScreenState extends State<HabitScreen> {
                                               .updatePlantGrowthData(
                                                   userId, existingPlantId);
 
+                                          _showCharacterScreen(context);
+
                                           ScaffoldMessenger.of(context)
                                               .showSnackBar(
                                             SnackBar(
@@ -884,54 +996,18 @@ class _HabitScreenState extends State<HabitScreen> {
                                         );
                                       }
                                     },
-                              child: Text('Regar'),
+                              child: Text('Regar',
+                                  style: TextStyle(
+                                      color: Colors.white, fontFamily: fuente)),
                             );
                           });
                     }),
-
-                /*  SizedBox(
-                  height: 50,
-                ), */
-                //Spacer(),
-                /* ElevatedButton(
-                  onPressed: () {
-                    _sliderInput?.value += 1;
-                    // Acción al presionar el botón
-                    /* ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text("¡Planta regada!"),
-                            ),
-                          ); */
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue, // Color de fondo
-                    //onPrimary: Colors.white, // Color del texto
-                    padding: EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 12), // Tamaño del botón
-                    textStyle: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  child: Text(
-                    "Regar",
-                    style: TextStyle(color: Colors.white, fontFamily: fuente),
-                  ),
-                ),
- */
-                /* Slider(
-            min: 0, // Valor mínimo del slider
-            max: 4, // Valor máximo del slider
-            value: _sliderInput?.value ?? 0,
-            onChanged: _updateSlider, // Actualizar el valor del slider
-            divisions: 4, // Divisiones para un paso más suave
-            label: _sliderInput?.value.toStringAsFixed(1), // Mostrar el valor actual
-          ), */
               ],
             ),
           ),
         ));
   }
+
   void dispose() {
     controller = null;
     growInput = null;
