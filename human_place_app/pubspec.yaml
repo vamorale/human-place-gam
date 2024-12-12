@@ -14,7 +14,7 @@ dependencies:
 
   cupertino_icons: ^1.0.6
   youtube_api: ^1.0.4 
-  photo_view: ^0.14.0
+  photo_view: ^0.15.0
   http: ^0.13.5 # No actualizado por flutter_automation
   url_launcher: ^6.2.3 
   cached_network_image: ^3.3.1 
@@ -26,36 +26,40 @@ dependencies:
   just_audio: ^0.9.36 
   http_parser: ^4.0.2
   rxdart: ^0.27.7 
-  sign_in_with_apple: ^5.0.0 
+  sign_in_with_apple: ^6.1.4 
   crypto: ^3.0.3 
   video_player: ^2.8.2 
-  rive: ^0.12.4 
+  rive: ^0.13.20 
   flip_card: ^0.7.0
   flutter_keyboard_visibility: ^6.0.0 
-  youtube_player_flutter: ^8.1.2 
+  youtube_player_flutter: ^9.1.1 
   metadata_fetch: ^0.4.1
   youtube_metadata: ^1.0.1
   audio_video_progress_bar: ^2.0.1
   basic_utils: ^5.5.4	 # Solo se logro actualizar hasta 5.5.4 por otras dependencias
   material_design_icons_flutter: ^7.0.7296
   # firebase
-  firebase_core: ^2.24.2 
-  firebase_auth: ^4.16.0 
-  firebase_analytics: ^10.8.6
-  cloud_functions: ^4.6.5
+  firebase_core: ^3.8.1 
+  firebase_auth: ^5.3.4 
+  firebase_analytics: ^11.3.6
+  cloud_functions: ^5.2.0
   google_sign_in: ^6.2.1 
-  cloud_firestore: ^4.14.0 
-  firebase_messaging: ^14.7.10 
+  cloud_firestore: ^5.5.1 
+  firebase_messaging: ^15.1.6 
   flutter_automation: ^2.0.0
   card_slider: ^1.0.5
   gallery_image_viewer: ^1.2.0
-  flutter_carousel_widget: ^2.0.2
+  flutter_carousel_widget: ^3.1.0
+
+dependencies_overrides:
+  archive: ^3.6.1
+  win32: ^5.5.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_launcher_icons: ^0.9.2
+  flutter_launcher_icons: ^0.14.2
 
 flutter:
   fonts:
