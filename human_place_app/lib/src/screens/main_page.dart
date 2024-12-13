@@ -8,16 +8,22 @@ import 'package:human_place_app/src/routes.dart';
 import 'package:human_place_app/src/screens/about_app.dart';
 import 'package:human_place_app/src/screens/habit_screen.dart';
 import 'package:human_place_app/src/screens/home_screen.dart';
-import 'package:human_place_app/src/screens/plants-gallery.dart';
+import 'package:human_place_app/src/utils/widget_utils.dart';
 import 'package:human_place_app/src/screens/profile_screen.dart';
 import 'package:human_place_app/src/services/firebase.dart';
 import 'package:human_place_app/src/services/plantas_control.dart';
 import 'package:material_design_icons_flutter/material_design_icons_flutter.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../logic/tutorial_logic.dart';
 //import 'package:rive/rive.dart' as rive;
 
 enum StateDay { Day, Night }
+
+final GlobalKey intentionButtonKey = GlobalKey();
+final GlobalKey mainButtonsKey = GlobalKey();
+final GlobalKey profilepageButtonKey = GlobalKey();
+final GlobalKey menuButtonKey = GlobalKey();
 
 class MainPage extends StatefulWidget {
   static final routerName = '/main-page';
@@ -70,8 +76,11 @@ class _MainPageState extends State<MainPage> {
 
   void initState() {
     this.getName();
-    super.initState();
     _loadAvatar();
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      checkTutorialForView(context, "home");
+    });
   }
 
   Future<void> _loadAvatar() async {
@@ -115,6 +124,10 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
     Size size = MediaQuery.of(context).size;
+
+    /* WidgetsBinding.instance.addPostFrameCallback((_) {
+      checkTutorialForView(context, "mainpage");
+    }); */
 
     //var urlAnimacionMain;
     var activeColorGradLight;
@@ -175,9 +188,13 @@ class _MainPageState extends State<MainPage> {
               //ICONBUTTON: BOTÓN PARA ACCEDER AL PERFIL DEL USUARIO
 
               leading: Container(
+                
                 margin: EdgeInsets.only(top: 10, left: 10),
                 padding: EdgeInsets.all(0),
+                
                 child: IconButton(
+                  key: profilepageButtonKey,
+                  
                   onPressed: () =>
                       {Navigator.pushNamed(context, ProfileScreen.routerName)},
                   icon: _avatarPath != null
@@ -187,7 +204,7 @@ class _MainPageState extends State<MainPage> {
                         )
                       : CircleAvatar(
                           radius: 50,
-                          child: Icon(Icons.person, size: 50),
+                          child: Icon(Icons.person, size: 40),
                         ),
                   style: IconButton.styleFrom(
                     elevation: 1,
@@ -206,6 +223,8 @@ class _MainPageState extends State<MainPage> {
                   width: 45,
                   height: 45,
                   child: PopupMenuButton(
+                    
+                  key: menuButtonKey,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -299,7 +318,9 @@ class _MainPageState extends State<MainPage> {
                         width: size.width,
                         height: size.height,
                         child: Image(
-                            image: stateDay == StateDay.Day ? AssetImage('assets/images/bg.png') : AssetImage('assets/images/night.png'),
+                            image: stateDay == StateDay.Day
+                                ? AssetImage('assets/images/bg.png')
+                                : AssetImage('assets/images/night.png'),
                             fit: BoxFit.fill),
                       ),
 
@@ -356,92 +377,31 @@ class _MainPageState extends State<MainPage> {
                           children: [
                             // ESPACIO INTERACTUABLE DEL PAISAJE
                             //UTILIZADO PARA NAVEGAR A "HERRAMIENTAS ATENCION"
-
-                            Container(
-                              margin: EdgeInsets.fromLTRB(
-                                  size.width / 12, 80, size.width / 12, 10),
-                              padding: EdgeInsets.all(5),
-                              width: size.width,
-                              height: size.height / 7,
-                              child: ElevatedButton.icon(
-                                  icon: Icon(
-                                    Icons.cloud,
-                                    size: 30,
-                                    color: Colors.black54,
-                                  ),
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                        context, HomeScreen.routerName,
-                                        arguments: {index = 2, mode = 4});
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                      backgroundColor: Colors.lightBlueAccent
-                                          .withOpacity(0.7),
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(20))),
-                                  label: ListTile(
-                                    contentPadding:
-                                        EdgeInsets.symmetric(horizontal: 5),
-                                    title: Text(
-                                      'Herramientas de atención',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontFamily: 'sen-regular',
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                    subtitle: Text(
-                                      'Meditaciones, reformula tus pensamientos, define tu propósito y más.',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontFamily: 'sen-regular'),
-                                    ),
-                                  )),
+                            SizedBox(
+                              height: 70,
                             ),
-                            //Spacer(),
 
-                            // ESPACIO INTERACTUABLE DEL PAISAJE
-                            //UTILIZADO PARA NAVEGAR A "HERRAMIENTAS DEl PROPÓSITO"
-
-                            Container(
-                              padding: EdgeInsets.all(5),
-                              margin: EdgeInsets.symmetric(
-                                  horizontal: size.width / 12, vertical: 10),
-                              width: size.width,
-                              height: size.height / 7,
-                              child: Tooltip(
-                                message: '¡Próximamente!',
-                                decoration: BoxDecoration(
-                                    color: Colors.red.withOpacity(0.8),
-                                    borderRadius:
-                                        BorderRadius.all(Radius.circular(5))),
-                                triggerMode: TooltipTriggerMode.tap,
-                                height: 20,
-                                margin: EdgeInsets.all(10),
-                                preferBelow: true,
-                                showDuration: Duration(seconds: 2),
+                            Column(key: mainButtonsKey, children: [
+                              Container(
+                                margin: EdgeInsets.fromLTRB(
+                                    size.width / 12, 10, size.width / 12, 10),
+                                padding: EdgeInsets.all(5),
+                                width: size.width,
+                                height: size.height / 7,
                                 child: ElevatedButton.icon(
                                     icon: Icon(
-                                      Icons.landscape,
+                                      Icons.cloud,
                                       size: 30,
                                       color: Colors.black54,
                                     ),
-                                    onPressed: null,
-                                    /* () {
+                                    onPressed: () {
                                       Navigator.pushNamed(
                                           context, HomeScreen.routerName,
-                                          arguments: {index = 2, mode = 6});
-                                    },*/
+                                          arguments: {index = 2, mode = 4});
+                                    },
                                     style: ElevatedButton.styleFrom(
-                                        backgroundColor:
-                                            Colors.blueGrey.withOpacity(0.9),
-                                        //foregroundColor: Colors.white,
-                                        disabledBackgroundColor:
-                                            Colors.blueGrey.withOpacity(0.8),
-                                        //disabledForegroundColor: Colors.amberAccent,
+                                        backgroundColor: Colors.lightBlueAccent
+                                            .withOpacity(0.7),
                                         elevation: 0,
                                         shape: RoundedRectangleBorder(
                                             borderRadius:
@@ -450,7 +410,7 @@ class _MainPageState extends State<MainPage> {
                                       contentPadding:
                                           EdgeInsets.symmetric(horizontal: 5),
                                       title: Text(
-                                        'Herramientas del propósito',
+                                        'Herramientas de atención',
                                         style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 14,
@@ -458,7 +418,7 @@ class _MainPageState extends State<MainPage> {
                                             fontWeight: FontWeight.bold),
                                       ),
                                       subtitle: Text(
-                                        'Define tu objetivo diario o a largo plazo.',
+                                        'Meditaciones, reformula tus pensamientos, define tu propósito y más.',
                                         style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 14,
@@ -466,98 +426,165 @@ class _MainPageState extends State<MainPage> {
                                       ),
                                     )),
                               ),
-                            ),
+                              //Spacer(),
 
-                            // ESPACIO INTERACTUABLE DEL PAISAJE
-                            //UTILIZADO PARA NAVEGAR A "HERRAMIENTAS DE LAS COMUNIDADES"
-                            Container(
-                              padding: EdgeInsets.all(5),
-                              margin: EdgeInsets.symmetric(
-                                  horizontal: size.width / 12, vertical: 10),
-                              width: size.width,
-                              height: size.height / 7,
-                              child: ElevatedButton.icon(
-                                  icon: Icon(
-                                    Icons.forest,
-                                    size: 30,
-                                    color: Colors.black54,
-                                  ),
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                        context, HomeScreen.routerName,
-                                        arguments: {index = 2, mode = 3});
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          Colors.greenAccent.withOpacity(0.7),
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(20))),
-                                  label: ListTile(
-                                    contentPadding:
-                                        EdgeInsets.symmetric(horizontal: 5),
-                                    title: Text(
-                                      'Herramientas de las comunidades',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontFamily: 'sen-regular',
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                    subtitle: Text(
-                                      'Encuentra apoyo y participa del estudio de salud mental.',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontFamily: 'sen-regular'),
-                                    ),
-                                  )),
-                            ),
+                              // ESPACIO INTERACTUABLE DEL PAISAJE
+                              //UTILIZADO PARA NAVEGAR A "HERRAMIENTAS DEl PROPÓSITO"
 
-                            // ESPACIO INTERACTUABLE DEL PAISAJE
-                            //UTILIZADO PARA NAVEGAR A "HERRAMIENTAS DE INTENCION"
+                              Container(
+                                padding: EdgeInsets.all(5),
+                                margin: EdgeInsets.symmetric(
+                                    horizontal: size.width / 12, vertical: 10),
+                                width: size.width,
+                                height: size.height / 7,
+                                child: Tooltip(
+                                  message: '¡Próximamente!',
+                                  decoration: BoxDecoration(
+                                      color: Colors.red.withOpacity(0.8),
+                                      borderRadius:
+                                          BorderRadius.all(Radius.circular(5))),
+                                  triggerMode: TooltipTriggerMode.tap,
+                                  height: 20,
+                                  margin: EdgeInsets.all(10),
+                                  preferBelow: true,
+                                  showDuration: Duration(seconds: 2),
+                                  child: ElevatedButton.icon(
+                                      icon: Icon(
+                                        Icons.landscape,
+                                        size: 30,
+                                        color: Colors.black54,
+                                      ),
+                                      onPressed: null,
+                                      /* () {
+                                      Navigator.pushNamed(
+                                          context, HomeScreen.routerName,
+                                          arguments: {index = 2, mode = 6});
+                                    },*/
+                                      style: ElevatedButton.styleFrom(
+                                          backgroundColor:
+                                              Colors.blueGrey.withOpacity(0.9),
+                                          //foregroundColor: Colors.white,
+                                          disabledBackgroundColor:
+                                              Colors.blueGrey.withOpacity(0.8),
+                                          //disabledForegroundColor: Colors.amberAccent,
+                                          elevation: 0,
+                                          shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(20))),
+                                      label: ListTile(
+                                        contentPadding:
+                                            EdgeInsets.symmetric(horizontal: 5),
+                                        title: Text(
+                                          'Herramientas del propósito',
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontFamily: 'sen-regular',
+                                              fontWeight: FontWeight.bold),
+                                        ),
+                                        subtitle: Text(
+                                          'Define tu objetivo diario o a largo plazo.',
+                                          style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 14,
+                                              fontFamily: 'sen-regular'),
+                                        ),
+                                      )),
+                                ),
+                              ),
 
-                            Container(
-                              padding: EdgeInsets.all(5),
-                              margin: EdgeInsets.symmetric(
-                                  horizontal: size.width / 12, vertical: 10),
-                              width: size.width,
-                              height: size.height / 7,
-                              child: ElevatedButton.icon(
-                                  icon: Icon(Icons.compost,
-                                      size: 30, color: Colors.black54),
-                                  onPressed: () {
-                                    Navigator.pushNamed(
-                                        context, HabitScreen.routerName);
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                      backgroundColor:
-                                          Colors.lightGreen.withOpacity(0.7),
-                                      elevation: 0,
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(20))),
-                                  label: ListTile(
-                                    contentPadding:
-                                        EdgeInsets.symmetric(horizontal: 5),
-                                    title: Text(
-                                      'Herramientas de intención',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontFamily: 'sen-regular',
-                                          fontWeight: FontWeight.bold),
+                              // ESPACIO INTERACTUABLE DEL PAISAJE
+                              //UTILIZADO PARA NAVEGAR A "HERRAMIENTAS DE LAS COMUNIDADES"
+                              Container(
+                                padding: EdgeInsets.all(5),
+                                margin: EdgeInsets.symmetric(
+                                    horizontal: size.width / 12, vertical: 10),
+                                width: size.width,
+                                height: size.height / 7,
+                                child: ElevatedButton.icon(
+                                    icon: Icon(
+                                      Icons.forest,
+                                      size: 30,
+                                      color: Colors.black54,
                                     ),
-                                    subtitle: Text(
-                                      'Planta tus hábitos y practícalos en una conversación.',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 14,
-                                          fontFamily: 'sen-regular'),
-                                    ),
-                                  )),
-                            ),
+                                    onPressed: () {
+                                      Navigator.pushNamed(
+                                          context, HomeScreen.routerName,
+                                          arguments: {index = 2, mode = 3});
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            Colors.greenAccent.withOpacity(0.7),
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(20))),
+                                    label: ListTile(
+                                      contentPadding:
+                                          EdgeInsets.symmetric(horizontal: 5),
+                                      title: Text(
+                                        'Herramientas de las comunidades',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontFamily: 'sen-regular',
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      subtitle: Text(
+                                        'Encuentra apoyo y participa del estudio de salud mental.',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontFamily: 'sen-regular'),
+                                      ),
+                                    )),
+                              ),
+
+                              // ESPACIO INTERACTUABLE DEL PAISAJE
+                              //UTILIZADO PARA NAVEGAR A "HERRAMIENTAS DE INTENCION"
+
+                              Container(
+                                key: intentionButtonKey,
+                                padding: EdgeInsets.all(5),
+                                margin: EdgeInsets.symmetric(
+                                    horizontal: size.width / 12, vertical: 10),
+                                width: size.width,
+                                height: size.height / 7,
+                                child: ElevatedButton.icon(
+                                    icon: Icon(Icons.compost,
+                                        size: 30, color: Colors.black54),
+                                    onPressed: () {
+                                      Navigator.pushNamed(
+                                          context, HabitScreen.routerName);
+                                    },
+                                    style: ElevatedButton.styleFrom(
+                                        backgroundColor:
+                                            Colors.lightGreen.withOpacity(0.7),
+                                        elevation: 0,
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(20))),
+                                    label: ListTile(
+                                      contentPadding:
+                                          EdgeInsets.symmetric(horizontal: 5),
+                                      title: Text(
+                                        'Herramientas de intención',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontFamily: 'sen-regular',
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      subtitle: Text(
+                                        'Planta tus hábitos y practícalos en una conversación.',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                            fontFamily: 'sen-regular'),
+                                      ),
+                                    )),
+                              ),
+                            ]),
 
                             //Spacer(),
 

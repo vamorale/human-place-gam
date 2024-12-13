@@ -6,7 +6,7 @@ import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:human_place_app/src/colors.dart';
 import 'package:human_place_app/src/notifiers/app.dart';
-import 'package:human_place_app/src/screens/pages/Guide_page.dart';
+import 'package:human_place_app/src/screens/main_page.dart';
 import 'package:human_place_app/src/utils/app.dart';
 import 'package:provider/provider.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
@@ -34,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
         await context.read<AppNotifier>().onLogin(uc.user!.uid);
         Navigator.pushNamedAndRemoveUntil(
           context,
-          GuidePage.routerName,
+          MainPage.routerName,
           (route) => false,
         );
       }

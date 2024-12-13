@@ -157,13 +157,19 @@ class _ItemMessageState extends State<ItemMessage> {
             mainAxisAlignment: widget.userMessage
                 ? MainAxisAlignment.end
                 : MainAxisAlignment.start,
-            crossAxisAlignment: widget.userMessage
-                ? CrossAxisAlignment.end
-                : CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SizedBox(
                 width: widget.userMessage ? size.width * 0.3 : 0,
               ),
+              if (!widget.userMessage)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundImage: AssetImage("assets/images/gato_sam.png"),
+                  ),
+                ),
               Flexible(
                 child: Bubble(
                   borderWidth: 1,
@@ -192,6 +198,18 @@ class _ItemMessageState extends State<ItemMessage> {
               if (!widget.isFirst)
                 SizedBox(
                   width: widget.userMessage ? 0 : size.width * 0.3,
+                ),
+              if (widget.userMessage)
+                Align(alignment: Alignment.topLeft,
+                child: 
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: CircleAvatar(
+                    radius: 20,
+                    backgroundImage:
+                        AssetImage("assets/images/personajes/huillin.png"),
+                  ),
+                ),
                 ),
             ],
           ),
