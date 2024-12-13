@@ -9,6 +9,9 @@ import 'package:human_place_app/src/colors.dart';
 import 'package:human_place_app/src/screens/main_page.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../logic/tutorial_logic.dart';
+
+final GlobalKey profileButtonKey = GlobalKey();
 
 class ProfileScreen extends StatefulWidget {
   static final routerName = '/profile-screen';
@@ -28,6 +31,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final currentUser = FirebaseAuth.instance.currentUser!;
   String uid = FirebaseAuth.instance.currentUser!.uid;
   var userName;
+
+  
 
   String? _selectedAvatar;
 
@@ -186,6 +191,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final User? user = auth.currentUser;
     Size size = MediaQuery.of(context).size;
     //late int opacidad;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      checkTutorialForView(context, "profile");
+    });
 
     return Scaffold(
       backgroundColor: Colors.pinkAccent,
@@ -293,6 +301,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             SizedBox(height: 10),
             ElevatedButton(
+              key: profileButtonKey,
               onPressed: _showAvatarDialog,
               child: Text('Seleccionar Avatar'),
             ),
