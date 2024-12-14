@@ -3,6 +3,7 @@
 import 'dart:math';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:human_place_app/src/screens/image_viewer_screen.dart';
 import 'package:human_place_app/src/screens/video_viewer_screen.dart';
 import 'package:human_place_app/src/services/dialogflow_cx.dart';
@@ -200,16 +201,52 @@ class _ItemMessageState extends State<ItemMessage> {
                   width: widget.userMessage ? 0 : size.width * 0.3,
                 ),
               if (widget.userMessage)
-                Align(alignment: Alignment.topLeft,
-                child: 
-                Padding(
-                  padding: const EdgeInsets.only(right: 8.0),
-                  child: CircleAvatar(
-                    radius: 20,
-                    backgroundImage:
-                        AssetImage("assets/images/personajes/huillin.png"),
-                  ),
-                ),
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('usuarios')
+                            .doc(FirebaseAuth.instance.currentUser?.uid)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return CircularProgressIndicator(); // Muestra un indicador de carga
+                          }
+
+                          if (snapshot.hasError ||
+                              !snapshot.hasData ||
+                              snapshot.data!.data() == null) {
+                            return Icon(Icons.person,
+                                size: 50); // Muestra un ícono predeterminado
+                          }
+
+                          final userData =
+                              snapshot.data!.data() as Map<String, dynamic>;
+                          final avatarUrl =
+                              userData['avatar'] ?? null; // URL de la imagen
+
+                          return CircleAvatar(
+                            radius: 20,
+                            backgroundColor: Colors.grey[300], // Color de fondo
+                            child: avatarUrl ==
+                                    null // Comprueba si hay imagen seleccionada
+                                ? Icon(
+                                    Icons.person, // Ícono predeterminado
+                                    size: 18,
+                                    color: Colors.grey[700],
+                                  )
+                                : null, // Si hay imagen, no muestra el ícono
+                            backgroundImage: avatarUrl !=
+                                    null // Si hay imagen seleccionada, úsala
+                                ? NetworkImage(
+                                    avatarUrl!) // Imagen dinámica desde una URL
+                                : null, // Sin imagen
+                          );
+                        },
+                      )),
                 ),
             ],
           ),

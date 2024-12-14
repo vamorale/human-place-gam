@@ -4,6 +4,7 @@ import '../utils/widget_utils.dart';
 import '../data/tutorial_steps.dart';
 import '../utils/text_highlighter.dart';
 //import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void _showStepsWithNavigation(BuildContext context, List<TutorialStep> steps) {
   int currentStepIndex = 0;
@@ -49,7 +50,14 @@ void _showStepsWithNavigation(BuildContext context, List<TutorialStep> steps) {
               step,
               currentStepIndex,
               steps.length,
-              () {
+              () async {
+                overlayEntry?.remove();
+                overlayEntry = null;
+                if (step.navigateTo != null &&
+                    step.navigateTo != getCurrentView(context)) {
+                  // Navegar a la vista especificada en el paso actual
+                  await Navigator.of(context).pushNamed(step.navigateTo!);
+                }
                 if (currentStepIndex < steps.length - 1) {
                   currentStepIndex++; // Avanza al siguiente paso
                   showCurrentStep();
@@ -228,12 +236,34 @@ class HighlightClipper extends CustomClipper<Path> {
   }
 }
 
-void checkTutorialForView(BuildContext context, String currentView) {
-  final stepsForView =
+void checkTutorialForView(BuildContext context, String currentView) async {
+  final hasSeen = await TutorialManager.hasSeenTutorial(currentView);
+
+  if (!hasSeen) {
+    final stepsForView =
       tutorialSteps.where((step) => step.targetView == currentView).toList();
 
   if (stepsForView.isNotEmpty) {
     _showStepsWithNavigation(context, stepsForView);
+    await TutorialManager.setTutorialSeen(currentView);
+  }
+  }
+}
+String getCurrentView(BuildContext context) {
+  final route = ModalRoute.of(context)?.settings.name;
+  return route ?? "unknown"; // Devuelve el nombre de la ruta o "unknown" si no hay una ruta asociada
+}
+class TutorialManager {
+  static const String tutorialKeyPrefix = "tutorial_";
+
+  static Future<void> setTutorialSeen(String viewName) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool("$tutorialKeyPrefix$viewName", true);
+  }
+
+  static Future<bool> hasSeenTutorial(String viewName) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool("$tutorialKeyPrefix$viewName") ?? false;
   }
 }
 

@@ -8,6 +8,19 @@ import 'package:human_place_app/src/colors.dart';
 import 'package:human_place_app/src/screens/login_screen.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:shared_preferences/shared_preferences.dart';
+
+Future<void> resetTutorials() async {
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  // Filtrar todas las claves que comiencen con "tutorial_"
+  for (String key in prefs.getKeys()) {
+    if (key.startsWith("tutorial_")) {
+      await prefs.remove(key);
+    }
+  }
+  print("Tutoriales restablecidos.");
+}
+
 class AboutPage extends StatefulWidget {
   static final routerName = '/about-page';
 
@@ -149,6 +162,15 @@ class _AboutPageState extends State<AboutPage> {
                             ],
                           ),
                         ),
+                      ),
+
+                      ElevatedButton(
+                        onPressed: () async {
+                          await resetTutorials();
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text("Tutoriales restablecidos.")));
+                        },
+                        child: Text("Restablecer Tutoriales"),
                       ),
 
                       // BOTON DE BORRAR CUENTA (NECESARIO PARA IPHONE)

@@ -38,7 +38,7 @@ class _MainPageState extends State<MainPage> {
   // DECLARACION DE VARIABLES A UTILIZAR
 
   // AVATAR
-  String? _avatarPath;
+  //String? _avatarPath;
 
   //OTRAS VARIABLES
 
@@ -76,19 +76,19 @@ class _MainPageState extends State<MainPage> {
 
   void initState() {
     this.getName();
-    _loadAvatar();
+    //_loadAvatar();
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkTutorialForView(context, "home");
     });
   }
 
-  Future<void> _loadAvatar() async {
+/*   Future<void> _loadAvatar() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _avatarPath = prefs.getString('selectedAvatar');
     });
-  }
+  } */
 
   //MÉTODO PARA OBTENER EL NOMBRE DEL USUSARIO
 
@@ -188,32 +188,54 @@ class _MainPageState extends State<MainPage> {
               //ICONBUTTON: BOTÓN PARA ACCEDER AL PERFIL DEL USUARIO
 
               leading: Container(
-                
-                margin: EdgeInsets.only(top: 10, left: 10),
-                padding: EdgeInsets.all(0),
-                
-                child: IconButton(
-                  key: profilepageButtonKey,
-                  
-                  onPressed: () =>
-                      {Navigator.pushNamed(context, ProfileScreen.routerName)},
-                  icon: _avatarPath != null
-                      ? CircleAvatar(
-                          backgroundImage: AssetImage(_avatarPath!),
-                          radius: 50,
-                        )
-                      : CircleAvatar(
-                          radius: 50,
-                          child: Icon(Icons.person, size: 40),
-                        ),
-                  style: IconButton.styleFrom(
-                    elevation: 1,
-                    padding: EdgeInsets.all(0),
-                    side: BorderSide(width: 2, color: Colors.black),
-                    fixedSize: Size.square(45),
-                  ),
-                ),
-              ),
+                  margin: EdgeInsets.only(top: 10, left: 10),
+                  padding: EdgeInsets.all(0),
+                  child: StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('usuarios')
+                          .doc(FirebaseAuth.instance.currentUser?.uid)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState ==
+                            ConnectionState.waiting) {
+                          return CircularProgressIndicator(); // Muestra un indicador de carga
+                        }
+
+                        if (snapshot.hasError ||
+                            !snapshot.hasData ||
+                            snapshot.data!.data() == null) {
+                          return Icon(Icons.person,
+                              size: 50); // Muestra un ícono predeterminado
+                        }
+
+                        final userData =
+                            snapshot.data!.data() as Map<String, dynamic>;
+                        final avatarUrl =
+                            userData['avatar'] ?? null; // URL de la imagen
+
+                        return IconButton(
+                          key: profilepageButtonKey,
+                          onPressed: () => {
+                            Navigator.pushNamed(
+                                context, ProfileScreen.routerName)
+                          },
+                          icon: avatarUrl != null
+                              ? CircleAvatar(
+                                  backgroundImage: NetworkImage(avatarUrl!),
+                                  radius: 50,
+                                )
+                              : CircleAvatar(
+                                  radius: 50,
+                                  child: Icon(Icons.person, size: 40),
+                                ),
+                          style: IconButton.styleFrom(
+                            elevation: 1,
+                            padding: EdgeInsets.all(0),
+                            side: BorderSide(width: 2, color: Colors.black),
+                            fixedSize: Size.square(45),
+                          ),
+                        );
+                      })),
 
               actions: [
                 // CONTENEDOR CON MENU DESPLEGABLE
@@ -223,8 +245,7 @@ class _MainPageState extends State<MainPage> {
                   width: 45,
                   height: 45,
                   child: PopupMenuButton(
-                    
-                  key: menuButtonKey,
+                    key: menuButtonKey,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.all(Radius.circular(12)),
@@ -622,9 +643,9 @@ class _MainPageState extends State<MainPage> {
                                     ),
                                   ),
                                   onPressed: () {
-                                    Navigator.pushNamed(
+                                    /* Navigator.pushNamed(
                                         context, HomeScreen.routerName,
-                                        arguments: {index = 2, mode = 0});
+                                        arguments: {index = 2, mode = 0}); */
                                   },
                                   icon: Icon(
                                     MdiIcons.messageFastOutline,
