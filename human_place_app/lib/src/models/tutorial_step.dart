@@ -15,6 +15,7 @@ class TutorialStep {
   final String? characterName;
   final Color? nameColor;
   final List<String>? wordsToHighlight;
+  final String? navigateTo;
 
   TutorialStep({
     required this.message,
@@ -25,6 +26,7 @@ class TutorialStep {
     this.position = CharacterPosition.bottom,
     this.characterName,
     this.nameColor,
-    this.wordsToHighlight
+    this.wordsToHighlight,
+    this.navigateTo
   });
 }

@@ -1,19 +1,20 @@
-import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-/*import 'package:human_place_app/src/screens/home_screen.dart';
-import 'package:human_place_app/src/routes.dart';
-import 'package:human_place_app/src/screens/main_page.dart';*/
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:human_place_app/src/colors.dart';
-import 'package:human_place_app/src/screens/about_app.dart';
 import 'package:rive/rive.dart';
 import 'package:human_place_app/src/widgets/time_picker.dart';
 import 'package:human_place_app/src/widgets/tempo.dart';
 import 'package:human_place_app/src/widgets/habit_selector.dart';
 import 'package:human_place_app/src/services/firestore_planta.dart';
 import 'package:human_place_app/src/screens/character_screen.dart';
+import '../logic/tutorial_logic.dart';
+import '../services/reward_service.dart';
+
+final GlobalKey habitSection = GlobalKey();
+final GlobalKey timeHabit = GlobalKey();
+final GlobalKey seedsSection = GlobalKey();
+final GlobalKey pourSection = GlobalKey();
+
 class HabitScreen extends StatefulWidget {
   static final routerName = '/habit-screen';
   @override
@@ -46,6 +47,12 @@ class _HabitScreenState extends State<HabitScreen> {
   void initState() {
     super.initState();
     //_checkPlantStatusOnLoad();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      checkTutorialForView(context, "habitscreen");
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      otorgarSemillas(context);
+    });
   }
 
   Future<void> _checkPlantStatusOnLoad() async {
@@ -60,11 +67,13 @@ class _HabitScreenState extends State<HabitScreen> {
       isLoading = false;
     });
   }
+
   void _showCharacterScreen(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => CharacterScreen(
-          imagePath: 'assets/images/personajes/huillin.png', // Ruta de la imagen en assets
+          imagePath:
+              'assets/images/personajes/huillin.png', // Ruta de la imagen en assets
           text: '¡Has completado la acción!',
           onActionCompleted: () {
             Navigator.of(context).pop(); // Cerrar la pantalla
@@ -241,6 +250,7 @@ class _HabitScreenState extends State<HabitScreen> {
               ),
             ),
             child: Column(
+              key: habitSection,
               children: [
                 Container(
                   padding: EdgeInsets.all(5),
@@ -352,181 +362,194 @@ class _HabitScreenState extends State<HabitScreen> {
                   ),
                 ),
                 Center(
-                child: 
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                  Container(
-                    alignment: Alignment.center,
-                      margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
-                      padding: EdgeInsets.all(0),
-                      width: (size.width / 2) - 20,
-                      decoration: BoxDecoration(
-                        color: Colors.white, // Fondo blanco para la pizarra
-                        borderRadius:
-                            BorderRadius.circular(5), // Bordes redondeados
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(
-                                0.7), // Sombra alrededor de la pizarra
-                            spreadRadius: 2,
-                            blurRadius: 5,
-                            offset: Offset(0, 6), // Dirección de la sombra
-                          ),
-                        ],
-                        border: Border.all(
-                          color: Colors
-                              .black, // Marco negro alrededor de la pizarra
-                          width: 2,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            "Hora de riego:",
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontFamily: fuente,
-                                fontWeight: FontWeight.bold),
-                          ),
-                          Text(
-                            "${_selectedTime.format(context)}",
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontFamily: fuente,
-                                fontWeight: FontWeight.bold),
-                          ),
-                          SizedBox(height: 2),
-                          /* TimePickerAlertDialog(
+                  child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.max,
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        Container(
+                            key: timeHabit,
+                            alignment: Alignment.center,
+                            margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
+                            padding: EdgeInsets.all(0),
+                            width: (size.width / 2) - 20,
+                            decoration: BoxDecoration(
+                              color:
+                                  Colors.white, // Fondo blanco para la pizarra
+                              borderRadius: BorderRadius.circular(
+                                  5), // Bordes redondeados
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(
+                                      0.7), // Sombra alrededor de la pizarra
+                                  spreadRadius: 2,
+                                  blurRadius: 5,
+                                  offset:
+                                      Offset(0, 6), // Dirección de la sombra
+                                ),
+                              ],
+                              border: Border.all(
+                                color: Colors
+                                    .black, // Marco negro alrededor de la pizarra
+                                width: 2,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(
+                                  "Hora de riego:",
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontFamily: fuente,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  "${_selectedTime.format(context)}",
+                                  style: TextStyle(
+                                      fontSize: 16,
+                                      fontFamily: fuente,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                SizedBox(height: 2),
+                                /* TimePickerAlertDialog(
                           onTimeSelected: _onTimeSelected,
                         ), */
-                          StreamBuilder<DocumentSnapshot>(
-                            stream: FirebaseFirestore.instance
-                                .collection('usuarios')
-                                .doc(userId)
-                                .snapshots(),
-                            builder: (context, snapshot) {
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return CircularProgressIndicator(); // Mostrar un indicador de carga
-                              }
+                                StreamBuilder<DocumentSnapshot>(
+                                  stream: FirebaseFirestore.instance
+                                      .collection('usuarios')
+                                      .doc(userId)
+                                      .snapshots(),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.connectionState ==
+                                        ConnectionState.waiting) {
+                                      return CircularProgressIndicator(); // Mostrar un indicador de carga
+                                    }
 
-                              if (snapshot.hasError) {
-                                return Text(
-                                  'Error al cargar el hábito.',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontFamily: fuente,
-                                    color: Colors.white,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                );
-                              }
+                                    if (snapshot.hasError) {
+                                      return Text(
+                                        'Error al cargar el hábito.',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontFamily: fuente,
+                                          color: Colors.white,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      );
+                                    }
 
-                              if (!snapshot.hasData || !snapshot.data!.exists) {
-                                return Text(
-                                  'No se ha seleccionado ningún hábito.',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontFamily: fuente,
-                                    color: Colors.white,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                );
-                              }
+                                    if (!snapshot.hasData ||
+                                        !snapshot.data!.exists) {
+                                      return Text(
+                                        'No se ha seleccionado ningún hábito.',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontFamily: fuente,
+                                          color: Colors.white,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      );
+                                    }
 
-                              final data = snapshot.data!.data()
-                                  as Map<String, dynamic>?;
-                              final String? selectedHabit =
-                                  data?['selectedHabit'];
+                                    final data = snapshot.data!.data()
+                                        as Map<String, dynamic>?;
+                                    final String? selectedHabit =
+                                        data?['selectedHabit'];
 
-                              if (selectedHabit == null) {
-                                return Text(
-                                  'No se ha seleccionado ningún hábito.',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontFamily: fuente,
-                                    color: Colors.white,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                );
-                              }
+                                    if (selectedHabit == null) {
+                                      return Text(
+                                        'No se ha seleccionado ningún hábito.',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontFamily: fuente,
+                                          color: Colors.white,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      );
+                                    }
 
-                              return IconButton(
-                                icon: Icon(Icons.alarm),
-                                onPressed: () {
-                                  _onTimeSelected(_selectedTime);
-                                },
-                              );
-                            },
+                                    return IconButton(
+                                      icon: Icon(Icons.alarm),
+                                      onPressed: () {
+                                        _onTimeSelected(_selectedTime);
+                                      },
+                                    );
+                                  },
+                                ),
+                              ],
+                            )),
+                        Container(
+                          key: seedsSection,
+                          margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
+                          //padding: EdgeInsets.all(5),
+                          width: (size.width / 2) - 20,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: Colors.lightGreen.shade400,
+                            border: Border.all(color: Colors.green, width: 2),
+                            borderRadius: BorderRadius.circular(2),
                           ),
-                        ],
-                      )),
-                  Container(
-                    margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
-                    //padding: EdgeInsets.all(5),
-                    width: (size.width / 2) - 20,
-                    alignment: Alignment.center,
-                    decoration: BoxDecoration(
-                      color: Colors.lightGreen.shade400,
-                      border: Border.all(color: Colors.green, width: 2),
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                    child: Column(children: [
-                      StreamBuilder<DocumentSnapshot>(
-                        stream: FirebaseFirestore.instance
-                            .collection('usuarios')
-                            .doc(userId)
-                            .snapshots(),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData) {
-                            return CircularProgressIndicator();
-                          }
+                          child: Column(children: [
+                            StreamBuilder<DocumentSnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection('usuarios')
+                                  .doc(userId)
+                                  .snapshots(),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) {
+                                  return CircularProgressIndicator();
+                                }
 
-                          final userData =
-                              snapshot.data!.data() as Map<String, dynamic>;
-                          final int protectores = userData['protectores'] ?? 0;
-                          final int semillas = userData['semillas'] ?? 0;
+                                final userData = snapshot.data!.data()
+                                    as Map<String, dynamic>;
+                                final int protectores =
+                                    userData['protectores'] ?? 0;
+                                final int semillas = userData['semillas'] ?? 0;
 
-                          return Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text('Semillas: $semillas',
-                                  style: TextStyle(
-                                fontSize: 16,
-                                fontFamily: fuente,
-                                fontWeight: FontWeight.bold),
-                          ),
-                              Text('Protectores: $protectores',
-                                  style: TextStyle(
-                                fontSize: 16,
-                                fontFamily: fuente,
-                                fontWeight: FontWeight.bold),
-                          ),
-                              ElevatedButton(
-                                style: ElevatedButton.styleFrom(padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5) ),
-                                onPressed: () async {
-                                  final firestoreService = FirestoreService();
-                                  await firestoreService
-                                      .convertirSemillasAProtectores(userId);
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                          '¡Conversión intentada! Verifica tu saldo y protectores.'),
+                                return Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      'Semillas: $semillas',
+                                      style: TextStyle(
+                                          fontSize: 16,
+                                          fontFamily: fuente,
+                                          fontWeight: FontWeight.bold),
                                     ),
-                                  );
-                                },
-                                child: Text('Convertir'),
-                              ),
-                            ],
-                          );
-                        },
-                      ),
-                    ]),
-                  ),
-                ]),),
+                                    Text(
+                                      'Protectores: $protectores',
+                                      style: TextStyle(
+                                          fontSize: 16,
+                                          fontFamily: fuente,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                          padding: EdgeInsets.symmetric(
+                                              horizontal: 10, vertical: 5)),
+                                      onPressed: () async {
+                                        final firestoreService =
+                                            FirestoreService();
+                                        await firestoreService
+                                            .convertirSemillasAProtectores(
+                                                userId);
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          SnackBar(
+                                            content: Text(
+                                                '¡Conversión intentada! Verifica tu saldo y protectores.'),
+                                          ),
+                                        );
+                                      },
+                                      child: Text('Convertir'),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          ]),
+                        ),
+                      ]),
+                ),
                 IntrinsicWidth(
                   child: Container(
                       padding: EdgeInsets.all(5),
@@ -675,13 +698,14 @@ class _HabitScreenState extends State<HabitScreen> {
                             return Container(
                               width: 210,
                               height: 220,
-                              margin: EdgeInsets.symmetric(vertical: 20, horizontal: 10),
+                              margin: EdgeInsets.symmetric(
+                                  vertical: 20, horizontal: 10),
                               child: RiveAnimation.asset(
                                 'assets/animationsRive/growing_plant.riv',
                                 fit: BoxFit.fitHeight,
                                 onInit: (artboard) {
                                   // Inicializar el controlador solo si no está ya configurado
-                                  if (controller == null) {
+                                  /* if (controller == null) {
                                     controller =
                                         StateMachineController.fromArtboard(
                                             artboard,
@@ -691,6 +715,20 @@ class _HabitScreenState extends State<HabitScreen> {
                                           as RiveAnimationController<dynamic>);
 
                                       // Encontrar el input 'Grow' y asignarlo
+                                      growInput =
+                                          controller!.findInput<double>('Grow');
+                                      if (growInput != null) {
+                                        growInput!.value =
+                                            calculateInputValue(growthDays);
+                                      }
+                                    }
+                                  } */
+                                  if (controller == null) {
+                                    controller =
+                                        StateMachineController.fromArtboard(
+                                            artboard, 'Plant');
+                                    if (controller != null) {
+                                      artboard.addController(controller!);
                                       growInput =
                                           controller!.findInput<double>('Grow');
                                       if (growInput != null) {
@@ -926,6 +964,7 @@ class _HabitScreenState extends State<HabitScreen> {
                             }
                             ;
                             return ElevatedButton(
+                              key: pourSection,
                               style: ElevatedButton.styleFrom(
                                 disabledForegroundColor: Colors.black45,
                                 backgroundColor: Colors.blue, // Color de fondo
@@ -1009,7 +1048,7 @@ class _HabitScreenState extends State<HabitScreen> {
   }
 
   void dispose() {
-    controller = null;
+    controller?.dispose();
     growInput = null;
     super.dispose();
   }

@@ -4,7 +4,6 @@ Future<Rect> getWidgetBounds(GlobalKey key) async{
   while (key.currentContext == null) {
     await Future.delayed(const Duration(milliseconds: 10));
   }
-  
   final renderObject = key.currentContext?.findRenderObject();
   
   if (renderObject == null || renderObject is! RenderBox) {
