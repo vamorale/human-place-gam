@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:rive/rive.dart';
+import 'package:human_place_app/src/utils/notification_helper.dart';
+import 'package:rive/rive.dart' as rive;
 import 'package:human_place_app/src/widgets/time_picker.dart';
 import 'package:human_place_app/src/widgets/tempo.dart';
 import 'package:human_place_app/src/widgets/habit_selector.dart';
@@ -12,6 +13,7 @@ import '../services/reward_service.dart';
 import '../widgets/conversion.dart';
 import '../widgets/confirm_watering_modal.dart';
 import '../services/medalla_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 final GlobalKey habitSection = GlobalKey();
 final GlobalKey timeHabit = GlobalKey();
@@ -35,20 +37,23 @@ class _HabitScreenState extends State<HabitScreen> {
   final FirebaseAuth auth = FirebaseAuth.instance;
   final userId = FirebaseAuth.instance.currentUser!.uid;
 
-  SMIInput<double>? growInput;
-  StateMachineController? controller;
+  rive.SMIInput<double>? growInput;
+  rive.StateMachineController? controller;
 
   //TIMEPICKER
-  TimeOfDay _selectedTime = TimeOfDay.now();
+  /* TimeOfDay _selectedTime = TimeOfDay.now();
   void _onTimeSelected(TimeOfDay time) {
     setState(() {
       _selectedTime = time;
     });
-  }
+  } */
+  TimeOfDay? selectedTime;
+  String? savedTime;
 
   @override
   void initState() {
     super.initState();
+    _loadSavedTime();
     //_checkPlantStatusOnLoad();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkTutorialForView(context, "habitscreen");
@@ -56,12 +61,85 @@ class _HabitScreenState extends State<HabitScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       otorgarSemillas(context);
     });
-     WidgetsBinding.instance.addPostFrameCallback((_) async {
-    await _firestoreService.checkPlantStatus(userId,context);
-    setState(() {}); // Actualiza la UI tras la verificación
-  });
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _firestoreService.checkPlantStatus(userId, context);
+      setState(() {}); // Actualiza la UI tras la verificación
+    });
   }
 
+  Future<void> _loadSavedTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      savedTime = prefs.getString('selectedTime') ?? 'No time selected';
+    });
+  }
+
+  Future<void> _saveSelectedTime(String time) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('selectedTime', time);
+  }
+
+  // Abrir selector de tiempo
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: selectedTime ?? TimeOfDay.now(),
+    );
+
+    if (picked != null && picked != selectedTime) {
+      setState(() {
+        selectedTime = picked;
+        savedTime =
+            "${picked.hour}:${picked.minute.toString().padLeft(2, '0')}";
+      });
+
+      // Guardar la hora seleccionada
+      _saveSelectedTime(savedTime!);
+
+      final duration = _calculateDuration();
+
+      // Programar la notificación
+      NotificationHelper.scheduleNotification(
+        "¡Hora de regar!",
+        "Riega tu planta y fortalece tu hábito. ¡Cualquier momento es bueno para avanzar!",
+        duration,
+      );
+
+      // Mostrar un mensaje de confirmación
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Notification set for $savedTime")),
+      );
+    }
+  }
+
+  // Calcular la duración para programar la notificación
+  Duration _calculateDuration() {
+    if (selectedTime == null) return Duration.zero;
+
+    final now = TimeOfDay.now();
+    final selectedDateTime = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+      selectedTime!.hour,
+      selectedTime!.minute,
+    );
+
+    final nowDateTime = DateTime(
+      DateTime.now().year,
+      DateTime.now().month,
+      DateTime.now().day,
+      now.hour,
+      now.minute,
+    );
+
+    if (selectedDateTime.isBefore(nowDateTime)) {
+      // Si la hora seleccionada ya pasó, programa para el día siguiente
+      return selectedDateTime.add(Duration(days: 1)).difference(nowDateTime);
+    } else {
+      return selectedDateTime.difference(nowDateTime);
+    }
+  }
   /* Future<void> _checkPlantStatusOnLoad() async {
     // Llamar a la función checkPlantStatus con el userId
     await _firestoreService.checkPlantStatus(userId);
@@ -375,53 +453,449 @@ class _HabitScreenState extends State<HabitScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         Container(
-                            key: timeHabit,
-                            alignment: Alignment.center,
-                            margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
-                            padding: EdgeInsets.all(0),
-                            width: (size.width / 2) - 20,
+                          key: seedsSection,
+                          margin: EdgeInsets.symmetric(vertical: 10),
+                          padding: EdgeInsets.all(2),
+                          width: (size.width / 2) - 20,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            color: Colors.lightGreen.shade100, // Fondo suave
+                            border: Border.all(
+                                color: Colors.green.shade700, width: 2),
+                            borderRadius:
+                                BorderRadius.circular(12), // Bordes redondeados
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.green.shade300
+                                    .withOpacity(0.5), // Sombra suave
+                                blurRadius: 8,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: StreamBuilder<DocumentSnapshot>(
+                            stream: FirebaseFirestore.instance
+                                .collection('usuarios')
+                                .doc(userId)
+                                .snapshots(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData) {
+                                return CircularProgressIndicator(); // Indicador de carga
+                              }
+
+                              final userData =
+                                  snapshot.data!.data() as Map<String, dynamic>;
+                              final int protectores =
+                                  userData['protectores'] ?? 0;
+                              final int semillas = userData['semillas'] ?? 0;
+
+                              return Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  // Título
+                                  Text(
+                                    "Recursos",
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: fuente,
+                                      color: Colors.green.shade900,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2),
+
+                                  // Semillas
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Image.asset(
+                                        'assets/images/planta/semilla.png', // Reemplaza con tu imagen de semilla
+                                        width: 24,
+                                        height: 24,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Semillas: $semillas',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontFamily: fuente,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.green.shade800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 2),
+
+                                  // Protectores
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Image.asset(
+                                        'assets/images/planta/abono.png',
+                                        width: 24,
+                                        height: 24,
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        'Abonos: $protectores',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          fontFamily: fuente,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.green.shade800,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  //SizedBox(height: 16),
+
+                                  // Botón Convertir
+                                  Center(
+                                    child: ElevatedButton(
+                                      style: ElevatedButton.styleFrom(
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: 20, vertical: 5),
+                                        backgroundColor: Colors.green.shade600,
+                                        foregroundColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(8),
+                                        ),
+                                      ),
+                                      onPressed: () {
+                                        mostrarConversionModal(context,
+                                            semillas, protectores, userId);
+                                      },
+                                      child: Text(
+                                        'Convertir',
+                                        style: TextStyle(
+                                          fontFamily: fuente,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+
+                        /* Container(
+                  key: seedsSection,
+                  margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
+                  //padding: EdgeInsets.all(5),
+                  width: (size.width / 2) - 20,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: Colors.lightGreen.shade400,
+                    border: Border.all(color: Colors.green, width: 2),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                  child: Column(children: [
+                    StreamBuilder<DocumentSnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('usuarios')
+                          .doc(userId)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return CircularProgressIndicator();
+                        }
+
+                        final userData =
+                            snapshot.data!.data() as Map<String, dynamic>;
+                        final int protectores = userData['protectores'] ?? 0;
+                        final int semillas = userData['semillas'] ?? 0;
+
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'Semillas: $semillas',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: fuente,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            Text(
+                              'Protectores: $protectores',
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontFamily: fuente,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5)),
+                              onPressed: () {
+                                final userData = snapshot.data!.data()
+                                    as Map<String, dynamic>;
+                                final int semillas = userData['semillas'] ?? 0;
+                                final int protectores =
+                                    userData['protectores'] ?? 0;
+
+                                // Mostrar la pantalla de conversión
+                                mostrarConversionModal(
+                                    context, semillas, protectores, userId);
+                              },
+                              child: Text('Convertir'),
+                            ),
+                          ],
+                        );
+                      },
+                    ),
+                  ]),
+                ),
+ */
+                        IntrinsicWidth(
+                          child: Container(
+                            padding: EdgeInsets.all(5),
                             decoration: BoxDecoration(
-                              color:
-                                  Colors.white, // Fondo blanco para la pizarra
-                              borderRadius: BorderRadius.circular(
-                                  5), // Bordes redondeados
+                              color: Colors.black,
+                              borderRadius:
+                                  BorderRadius.circular(10), // Menos redondeado
+                              border: Border.all(
+                                  color: Colors.grey.shade800,
+                                  width: 2), // Menor ancho
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withOpacity(
-                                      0.7), // Sombra alrededor de la pizarra
-                                  spreadRadius: 2,
-                                  blurRadius: 5,
-                                  offset:
-                                      Offset(0, 6), // Dirección de la sombra
+                                  color: Colors.black.withOpacity(0.5),
+                                  spreadRadius: 1,
+                                  blurRadius: 2,
+                                  offset: Offset(0, 2),
                                 ),
                               ],
-                              border: Border.all(
-                                color: Colors
-                                    .black, // Marco negro alrededor de la pizarra
-                                width: 2,
-                              ),
                             ),
                             child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Text(
-                                  "Hora de riego:",
+                                  "Temporizador",
                                   style: TextStyle(
-                                      fontSize: 16,
-                                      fontFamily: fuente,
-                                      fontWeight: FontWeight.bold),
+                                    fontSize: 16,
+                                    fontFamily: fuente,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
                                 ),
-                                Text(
-                                  "${_selectedTime.format(context)}",
+                                Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [],
+                                ),
+                                TimerWidget(
+                                  duration: _selectedDuration,
+                                  isTimerRunning: _isTimerRunning,
+                                ),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    IconButton(
+                                      onPressed: _editTimer == null
+                                          ? null
+                                          : () => _editTimer(context),
+                                      icon:
+                                          Icon(Icons.edit, color: Colors.white),
+                                    ),
+                                    SizedBox(width: 10),
+                                    IconButton(
+                                      onPressed: _toggleTimer,
+                                      icon: Icon(
+                                        _isTimerRunning
+                                            ? Icons.pause
+                                            : Icons.play_arrow,
+                                        color: _isTimerRunning
+                                            ? Colors.deepOrange.shade300
+                                            : Colors.lightGreenAccent.shade200,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ]),
+                ),
+                /* IntrinsicWidth(
+                  child: Container(
+                      padding: EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: Colors.black, // Fondo del reloj
+                        borderRadius:
+                            BorderRadius.circular(20), // Bordes redondeados
+                        border: Border.all(
+                          color: Colors.grey.shade800, // Borde exterior
+                          width: 3,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(
+                                0.7), // Sombra alrededor de la pizarra
+                            spreadRadius: 2,
+                            blurRadius: 4,
+                            offset: Offset(0, 4), // Dirección de la sombra
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            "Temporizador",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontFamily: fuente,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          TimerWidget(
+                            duration: _selectedDuration,
+                            isTimerRunning:
+                                _isTimerRunning, // Control del estado del temporizador
+                          ),
+                          Row(
+                            mainAxisAlignment:
+                                MainAxisAlignment.center, // Centra los botones
+                            children: [
+                              ElevatedButton(
+                                onPressed: _editTimer == null
+                                    ? null
+                                    : () => _editTimer(context),
+                                style: ElevatedButton.styleFrom(
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
+                                  minimumSize:
+                                      Size(110, 40), // Ancho y alto específicos
+                                ),
+                                child: Text(
+                                  "Editar",
+                                  style: TextStyle(fontFamily: fuente),
+                                ),
+                              ),
+                              SizedBox(
+                                  width: 10), // Espaciado entre los botones
+                              ElevatedButton(
+                                onPressed: _toggleTimer,
+                                style: ElevatedButton.styleFrom(
+                                  minimumSize: Size(110, 40),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 5),
+                                  backgroundColor: _isTimerRunning
+                                      ? Colors.deepOrange.shade300
+                                      : Colors.lightGreenAccent.shade200,
+                                ),
+                                child: Text(
+                                  _isTimerRunning ? "Pausar" : "Empezar",
                                   style: TextStyle(
-                                      fontSize: 16,
-                                      fontFamily: fuente,
-                                      fontWeight: FontWeight.bold),
+                                      fontFamily: fuente, fontSize: 14),
                                 ),
-                                SizedBox(height: 2),
-                                /* TimePickerAlertDialog(
+                              ),
+                            ],
+                          ),
+                        ],
+                      )),
+                ),
+                 */
+                Container(
+                    key: timeHabit,
+                    alignment: Alignment.center,
+                    margin: EdgeInsets.fromLTRB(0, 5, 0, 15),
+                    padding: EdgeInsets.all(0),
+                    width: size.width - 40,
+                    decoration: BoxDecoration(
+                      color: Colors.black, // Fondo blanco para la pizarra
+                      borderRadius:
+                          BorderRadius.circular(5), // Bordes redondeados
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(
+                              0.5), // Sombra alrededor de la pizarra
+                          spreadRadius: 2,
+                          blurRadius: 5,
+                          offset: Offset(0, 4), // Dirección de la sombra
+                        ),
+                      ],
+                      border: Border.all(
+                        color:
+                            Colors.white, // Marco negro alrededor de la pizarra
+                        width: 2,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          "Hora de notificación de riego:",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontFamily: 'Chalkboard',
+                              fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          savedTime ?? 'Escoge una hora',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 26,
+                              fontFamily: 'Chalkboard',
+                              fontWeight: FontWeight.bold),
+                        ),
+                        SizedBox(height: 2),
+                        Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              ElevatedButton(
+                                onPressed: () => _selectTime(context),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.greenAccent,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: Text(
+                                  "Configurar hora",
+                                  style: TextStyle(
+                                    fontFamily: 'Chalkboard',
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(
+                                width: 10,
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  NotificationHelper().cancelAllNotifications();
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.redAccent,
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 10, vertical: 8),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                ),
+                                child: Text(
+                                  "Cancelar Notif.",
+                                  style: TextStyle(
+                                    fontFamily: 'Chalkboard',
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ),
+                            ]),
+                        /* TimePickerAlertDialog(
                           onTimeSelected: _onTimeSelected,
                         ), */
-                                StreamBuilder<DocumentSnapshot>(
+                        /* StreamBuilder<DocumentSnapshot>(
                                   stream: FirebaseFirestore.instance
                                       .collection('usuarios')
                                       .doc(userId)
@@ -482,159 +956,60 @@ class _HabitScreenState extends State<HabitScreen> {
                                     );
                                   },
                                 ),
-                              ],
-                            )),
-                        Container(
-                          key: seedsSection,
-                          margin: EdgeInsets.fromLTRB(0, 5, 0, 5),
-                          //padding: EdgeInsets.all(5),
-                          width: (size.width / 2) - 20,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: Colors.lightGreen.shade400,
-                            border: Border.all(color: Colors.green, width: 2),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                          child: Column(children: [
-                            StreamBuilder<DocumentSnapshot>(
-                              stream: FirebaseFirestore.instance
-                                  .collection('usuarios')
-                                  .doc(userId)
-                                  .snapshots(),
-                              builder: (context, snapshot) {
-                                if (!snapshot.hasData) {
-                                  return CircularProgressIndicator();
-                                }
+                               */
+                        /* Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: <Widget>[
+                                      ElevatedButton(
+                                          onPressed: () => _selectTime(context),
+                                          /* {
+                                        NotificationHelper.scheduleNotification(
+                                          "Notification test", 
+                                          "my app Notification", 
+                                          5,
+                                        );
+                                      }, */
+                                          child:
+                                              const Text("Seleccionar hora")),
+                                      /* ElevatedButton(
+                                        onPressed: () {
+                                          if (savedTime != null &&
+                                              selectedTime != null) {
+                                            final duration =
+                                                _calculateDuration();
+                                            NotificationHelper
+                                                .scheduleNotification(
+                                              "Notification test",
+                                              "My app Notification",
+                                              duration,
+                                            );
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                  content: Text(
+                                                      "Notification set for $savedTime")),
+                                            );
+                                          }
+                                        },
+                                        child: const Text("Set Notification"),
+                                      ),
+                                       */
+                                      ElevatedButton(
+                                          onPressed: () {
+                                            NotificationHelper()
+                                                .cancelAllNotifications();
+                                          },
+                                          child: const Text(
+                                              "Cancelar notificación"))
+                                    ],
+                                  ),
+                                )
+                               */
+                      ],
+                    )),
 
-                                final userData = snapshot.data!.data()
-                                    as Map<String, dynamic>;
-                                final int protectores =
-                                    userData['protectores'] ?? 0;
-                                final int semillas = userData['semillas'] ?? 0;
-
-                                return Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Text(
-                                      'Semillas: $semillas',
-                                      style: TextStyle(
-                                          fontSize: 16,
-                                          fontFamily: fuente,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                    Text(
-                                      'Protectores: $protectores',
-                                      style: TextStyle(
-                                          fontSize: 16,
-                                          fontFamily: fuente,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                    ElevatedButton(
-                                      style: ElevatedButton.styleFrom(
-                                          padding: EdgeInsets.symmetric(
-                                              horizontal: 10, vertical: 5)),
-                                      onPressed: () {
-                                        final userData = snapshot.data!.data()
-                                            as Map<String, dynamic>;
-                                        final int semillas =
-                                            userData['semillas'] ?? 0;
-                                        final int protectores =
-                                            userData['protectores'] ?? 0;
-
-                                        // Mostrar la pantalla de conversión
-                                        mostrarConversionModal(context,
-                                            semillas, protectores, userId);
-                                      },
-                                      child: Text('Convertir'),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                          ]),
-                        ),
-                      ]),
-                ),
-                IntrinsicWidth(
-                  child: Container(
-                      padding: EdgeInsets.all(5),
-                      decoration: BoxDecoration(
-                        color: Colors.black, // Fondo del reloj
-                        borderRadius:
-                            BorderRadius.circular(20), // Bordes redondeados
-                        border: Border.all(
-                          color: Colors.grey.shade800, // Borde exterior
-                          width: 3,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(
-                                0.7), // Sombra alrededor de la pizarra
-                            spreadRadius: 2,
-                            blurRadius: 4,
-                            offset: Offset(0, 4), // Dirección de la sombra
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        children: [
-                          Text(
-                            "Temporizador",
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontFamily: fuente,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          TimerWidget(
-                            duration: _selectedDuration,
-                            isTimerRunning:
-                                _isTimerRunning, // Control del estado del temporizador
-                          ),
-                          Row(
-                            mainAxisAlignment:
-                                MainAxisAlignment.center, // Centra los botones
-                            children: [
-                              ElevatedButton(
-                                onPressed: _editTimer == null
-                                    ? null
-                                    : () => _editTimer(context),
-                                style: ElevatedButton.styleFrom(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 5),
-                                  minimumSize:
-                                      Size(110, 40), // Ancho y alto específicos
-                                ),
-                                child: Text(
-                                  "Editar",
-                                  style: TextStyle(fontFamily: fuente),
-                                ),
-                              ),
-                              SizedBox(
-                                  width: 10), // Espaciado entre los botones
-                              ElevatedButton(
-                                onPressed: _toggleTimer,
-                                style: ElevatedButton.styleFrom(
-                                  minimumSize: Size(110, 40),
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 5),
-                                  backgroundColor: _isTimerRunning
-                                      ? Colors.deepOrange.shade300
-                                      : Colors.lightGreenAccent.shade200,
-                                ),
-                                child: Text(
-                                  _isTimerRunning ? "Pausar" : "Empezar",
-                                  style: TextStyle(
-                                      fontFamily: fuente, fontSize: 14),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      )),
-                ),
-                SizedBox(height: 5),
+                SizedBox(height: 15),
                 Stack(alignment: Alignment.bottomCenter, children: [
                   StreamBuilder<DocumentSnapshot>(
                       stream: FirebaseFirestore.instance
@@ -701,11 +1076,11 @@ class _HabitScreenState extends State<HabitScreen> {
                             }
 
                             return Container(
-                              width: 210,
-                              height: 220,
+                              width: 180,
+                              height: 180,
                               margin: EdgeInsets.symmetric(
                                   vertical: 20, horizontal: 10),
-                              child: RiveAnimation.asset(
+                              child: rive.RiveAnimation.asset(
                                 'assets/animationsRive/growing_plant.riv',
                                 fit: BoxFit.fitHeight,
                                 onInit: (artboard) {
@@ -729,17 +1104,21 @@ class _HabitScreenState extends State<HabitScreen> {
                                     }
                                   } */
                                   if (controller == null) {
-                                    controller =
-                                        StateMachineController.fromArtboard(
-                                            artboard, 'Plant');
+                                    rive.StateMachineController? controller = rive.StateMachineController
+                                        .fromArtboard(artboard, 'Plant');
                                     if (controller != null) {
-                                      artboard.addController(controller!);
+                                      artboard.addController(controller as rive.RiveAnimationController<dynamic>);
                                       growInput =
-                                          controller!.findInput<double>('Grow');
+                                          controller.findInput<double>('Grow');
                                       if (growInput != null) {
                                         growInput!.value =
                                             calculateInputValue(growthDays);
                                       }
+                                    }
+                                  } else {
+                                    if (growInput != null) {
+                                      growInput!.value =
+                                          calculateInputValue(growthDays);
                                     }
                                   }
                                 },
@@ -806,11 +1185,11 @@ class _HabitScreenState extends State<HabitScreen> {
                                   'plantaActiva': plantId,
                                 });
 
-                                ScaffoldMessenger.of(context).showSnackBar(
+                               /*  ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                       content: Text(
                                           'Nueva planta creada con ID: $plantId')),
-                                );
+                                ); */
                               } catch (e) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
