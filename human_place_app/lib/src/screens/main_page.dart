@@ -57,6 +57,7 @@ class _MainPageState extends State<MainPage> {
 
   final userId = FirebaseAuth.instance.currentUser!.uid;
   late StateDay stateDay;
+  String? avatarUrl;
 
   //MÉTODOS
   //
@@ -80,6 +81,7 @@ class _MainPageState extends State<MainPage> {
   void initState() {
     super.initState();
     getName();
+    getAvatar();
     _checkPersonajeDesbloqueado();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkTutorialForView(context, "home");
@@ -100,16 +102,22 @@ class _MainPageState extends State<MainPage> {
       final userData = snapshot.data() as Map<String, dynamic>?;
       final personajeDesbloqueado = userData?['personajeDesbloqueado'] ?? false;
 
-      if (personajeDesbloqueado) {
+      if (personajeDesbloqueado && !_personajeMostrado) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
-        setState(() {
-          _personajeMostrado = true; // Asegura que solo ocurra una vez
-        });
+          /* setState(() {
+            _personajeMostrado = true; // Asegura que solo ocurra una vez
+          }); */
+          if (mounted) {
+            setState(() {
+              _personajeMostrado = true;
+            });
+          }
 
-        // Guarda en SharedPreferences para no mostrar nuevamente
-        prefs.setBool('personajeMostrado', true);
+          // Guarda en SharedPreferences para no mostrar nuevamente
+          prefs.setBool('personajeMostrado', true);
 
-        // Navegar a la pantalla de desbloqueo del personaje
+          // Navegar a la pantalla de desbloqueo del personaje
+          Future.microtask(() {
           Navigator.push(
             context,
             MaterialPageRoute(
@@ -125,10 +133,22 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
           );
-        });
+        });});
       }
     }
   }
+  Future<void> getAvatar() async {
+  final snapshot = await FirebaseFirestore.instance
+      .collection('usuarios')
+      .doc(FirebaseAuth.instance.currentUser?.uid)
+      .get();
+  final userData = snapshot.data() as Map<String, dynamic>?;
+  if (mounted) {
+    setState(() {
+      avatarUrl = userData?['avatar'];
+    });
+  }
+}
 
 /*   Future<void> _loadAvatar() async {
     final prefs = await SharedPreferences.getInstance();
@@ -235,7 +255,7 @@ class _MainPageState extends State<MainPage> {
               leading: Container(
                   margin: EdgeInsets.only(top: 10, left: 10),
                   padding: EdgeInsets.all(0),
-                  child: StreamBuilder<DocumentSnapshot>(
+                  child: /* StreamBuilder<DocumentSnapshot>(
                       stream: FirebaseFirestore.instance
                           .collection('usuarios')
                           .doc(FirebaseAuth.instance.currentUser?.uid)
@@ -258,11 +278,13 @@ class _MainPageState extends State<MainPage> {
                         final avatarUrl =
                             userData['avatar'] ?? null; // URL de la imagen
 
-                        return IconButton(
+                        return  */
+                        IconButton(
                           key: profilepageButtonKey,
-                          onPressed: () => {
-                            Navigator.pushNamed(
-                                context, ProfileScreen.routerName)
+                          onPressed: ()  async {
+                            await Navigator.pushNamed(
+                                context, ProfileScreen.routerName);
+                                getAvatar();
                           },
                           icon: avatarUrl != null
                               ? CircleAvatar(
@@ -279,9 +301,9 @@ class _MainPageState extends State<MainPage> {
                             side: BorderSide(width: 2, color: Colors.black),
                             fixedSize: Size.square(45),
                           ),
-                        );
-                      })),
-
+                        )
+              ),
+                        
               actions: [
                 // CONTENEDOR CON MENU DESPLEGABLE
 
@@ -446,8 +468,13 @@ class _MainPageState extends State<MainPage> {
                           bool personajeDesbloqueado =
                               userData?['personajeDesbloqueado'] ?? false;
                           if (personajeDesbloqueado && !_personajeMostrado) {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                            /*  WidgetsBinding.instance.addPostFrameCallback((_) {
                               _checkPersonajeDesbloqueado();
+                            }); */
+                            Future.microtask(() {
+                              if (mounted) {
+                                _checkPersonajeDesbloqueado();
+                              }
                             });
 
                             // Mostrar CharacterScreen
@@ -497,7 +524,7 @@ class _MainPageState extends State<MainPage> {
                               height: 70,
                             ),
 
-                            Column(key: mainButtonsKey, children: [
+                            Column(children: [
                               Container(
                                 margin: EdgeInsets.fromLTRB(
                                     size.width / 12, 10, size.width / 12, 10),
