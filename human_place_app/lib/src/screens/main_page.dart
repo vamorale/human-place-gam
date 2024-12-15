@@ -16,6 +16,7 @@ import 'package:material_design_icons_flutter/material_design_icons_flutter.dart
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../logic/tutorial_logic.dart';
+import '../screens/character_screen.dart';
 //import 'package:rive/rive.dart' as rive;
 
 enum StateDay { Day, Night }
@@ -119,6 +120,7 @@ class _MainPageState extends State<MainPage> {
     userName = uid;
     print(userName);
   }
+  bool _personajeMostrado = false;
 
   @override
   Widget build(BuildContext context) {
@@ -374,7 +376,7 @@ class _MainPageState extends State<MainPage> {
 
                       //Easter Egg
 
-                      Visibility(
+                      /* Visibility(
                         visible: false,
                         child: Positioned(
                             left: 5,
@@ -386,7 +388,55 @@ class _MainPageState extends State<MainPage> {
                                       "assets/images/personajes/tucuquere.png")),
                             )),
                       ),
+ */
+                      StreamBuilder<DocumentSnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('usuarios')
+                            .doc(userId)
+                            .snapshots(),
+                        builder: (context, snapshot) {
+                          if (!snapshot.hasData) return SizedBox.shrink();
 
+                          Map<String, dynamic>? userData =
+                              snapshot.data!.data() as Map<String, dynamic>?;
+
+                          bool personajeDesbloqueado =
+                              userData?['personajeDesbloqueado'] ?? false;
+                          if (personajeDesbloqueado && !_personajeMostrado) {
+          _personajeMostrado = true; // Evitar mostrar múltiples veces
+
+          // Mostrar CharacterScreen
+          Future.microtask(() {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => CharacterScreen(
+                  imagePath: 'assets/images/personajes/tucuquere.png',
+                  text: '¡Has desbloqueado un nuevo personaje!\n Como recompensa por encontrarlo, ¡te regala 5 semillas adicionales!',
+                  onActionCompleted: () {
+                    Navigator.pop(context); // Volver a la pantalla anterior
+                  },
+                  rewardImagePath: "assets/images/planta/semilla.png",
+                  nameCharacter: "Magu, el tucúquere.",
+                ),
+              ),
+            );
+          });
+                          }
+                          return Visibility(
+                            visible: personajeDesbloqueado,
+                            child: Positioned(
+                              left: 10,
+                              top: MediaQuery.of(context).size.height / 5,
+                              child: Container(
+                                width: 30,
+                                child: Image.asset(
+                                    "assets/images/personajes/tucuquere.png"),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                       //LISTA DE ESPACIOS INTERACTUABLES DEL PAISAJE
                       //NOTA: ESTA LISTA CONTIENE EL MENSAJE DE SAM
 
@@ -597,7 +647,7 @@ class _MainPageState extends State<MainPage> {
                                             fontWeight: FontWeight.bold),
                                       ),
                                       subtitle: Text(
-                                        'Planta tus hábitos y practícalos en una conversación.',
+                                        'Planta tus hábitos y practícalos diariamente.',
                                         style: TextStyle(
                                             color: Colors.white,
                                             fontSize: 14,

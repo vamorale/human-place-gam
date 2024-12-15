@@ -9,6 +9,9 @@ import 'package:human_place_app/src/services/firestore_planta.dart';
 import 'package:human_place_app/src/screens/character_screen.dart';
 import '../logic/tutorial_logic.dart';
 import '../services/reward_service.dart';
+import '../widgets/conversion.dart';
+import '../widgets/confirm_watering_modal.dart';
+import '../services/medalla_service.dart';
 
 final GlobalKey habitSection = GlobalKey();
 final GlobalKey timeHabit = GlobalKey();
@@ -53,9 +56,13 @@ class _HabitScreenState extends State<HabitScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       otorgarSemillas(context);
     });
+     WidgetsBinding.instance.addPostFrameCallback((_) async {
+    await _firestoreService.checkPlantStatus(userId,context);
+    setState(() {}); // Actualiza la UI tras la verificación
+  });
   }
 
-  Future<void> _checkPlantStatusOnLoad() async {
+  /* Future<void> _checkPlantStatusOnLoad() async {
     // Llamar a la función checkPlantStatus con el userId
     await _firestoreService.checkPlantStatus(userId);
     final int daysAchieved =
@@ -66,9 +73,9 @@ class _HabitScreenState extends State<HabitScreen> {
     setState(() {
       isLoading = false;
     });
-  }
+  } */
 
-  void _showCharacterScreen(BuildContext context) {
+  /* void _showCharacterScreen(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => CharacterScreen(
@@ -81,7 +88,7 @@ class _HabitScreenState extends State<HabitScreen> {
         ),
       ),
     );
-  }
+  } */
 
   double calculateInputValue(int growthDays) {
     if (growthDays == 0 || growthDays == 1) {
@@ -526,19 +533,17 @@ class _HabitScreenState extends State<HabitScreen> {
                                       style: ElevatedButton.styleFrom(
                                           padding: EdgeInsets.symmetric(
                                               horizontal: 10, vertical: 5)),
-                                      onPressed: () async {
-                                        final firestoreService =
-                                            FirestoreService();
-                                        await firestoreService
-                                            .convertirSemillasAProtectores(
-                                                userId);
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                                '¡Conversión intentada! Verifica tu saldo y protectores.'),
-                                          ),
-                                        );
+                                      onPressed: () {
+                                        final userData = snapshot.data!.data()
+                                            as Map<String, dynamic>;
+                                        final int semillas =
+                                            userData['semillas'] ?? 0;
+                                        final int protectores =
+                                            userData['protectores'] ?? 0;
+
+                                        // Mostrar la pantalla de conversión
+                                        mostrarConversionModal(context,
+                                            semillas, protectores, userId);
                                       },
                                       child: Text('Convertir'),
                                     ),
@@ -979,60 +984,9 @@ class _HabitScreenState extends State<HabitScreen> {
                               onPressed: _isButtonDisabled
                                   ? null // Si está deshabilitado, el botón no tiene acción
                                   : () async {
-                                      try {
-                                        // Instanciar el servicio Firestore
-                                        final firestoreService =
-                                            FirestoreService();
-
-                                        // Variable para almacenar el valor de plantId si ya existe
-                                        String? existingPlantId;
-
-                                        // Verificar si el usuario ya tiene un plantId activo
-                                        final plantIdExists =
-                                            !(await _firestoreService
-                                                .verificarDatoFirestore(
-                                                    "usuarios",
-                                                    userId,
-                                                    "plantaActiva",
-                                                    false));
-
-                                        if (plantIdExists) {
-                                          final docSnapshot =
-                                              await FirebaseFirestore.instance
-                                                  .collection('usuarios')
-                                                  .doc(userId)
-                                                  .get();
-                                          existingPlantId = docSnapshot
-                                              .data()?['plantaActiva'];
-                                          // Si ya existe plantId o no es false, actualizar los datos de crecimiento
-                                          await firestoreService
-                                              .updatePlantGrowthData(
-                                                  userId, existingPlantId);
-
-                                          _showCharacterScreen(context);
-
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                                content: Text(
-                                                    'Datos de crecimiento actualizados correctamente')),
-                                          );
-                                        } else {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                                content: Text(
-                                                    'Debes plantar primero')),
-                                          );
-                                        }
-                                      } catch (e) {
-                                        // Manejo de errores
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          SnackBar(
-                                              content: Text(
-                                                  'Error al procesar los datos: $e')),
-                                        );
+                                      if (mounted) {
+                                        mostrarConfirmacionRiegoModal(
+                                            context, userId, existingPlantId);
                                       }
                                     },
                               child: Text('Regar',

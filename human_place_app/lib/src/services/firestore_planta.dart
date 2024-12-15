@@ -1,4 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+import '../screens/character_screen.dart';
+
+class ConversionResult {
+  final bool success;
+  final String message;
+
+  ConversionResult({required this.success, required this.message});
+}
 
 class FirestoreService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -30,7 +39,7 @@ class FirestoreService {
         'growthDays': growthDays,
         'wateringStartDate': wateringStartDate.toIso8601String(),
         'lastWateringDate': lastWateringDate.toIso8601String(),
-        'protectors': protectors,
+        //'protectors': protectors,
         'isAlive': isAlive,
       });
 
@@ -63,40 +72,94 @@ class FirestoreService {
     }
   }
 
-  Future<void> updatePlantGrowthData(
-      String userId, String? existingplantid) async {
+  Future<void> verificarDesbloqueo(String userId) async {
     try {
       // Referencia al documento del usuario
-      final docRef = _firestore
-          .collection('usuarios')
-          .doc(userId)
-          .collection('plant_growth')
-          .doc(existingplantid);
+      final userDoc = _firestore.collection('usuarios').doc(userId);
 
       // Obtener el documento actual
-      final docSnapshot = await docRef.get();
+      final docSnapshot = await userDoc.get();
 
-      if (docSnapshot.exists) {
-        // Obtener datos actuales
-        final data = docSnapshot.data();
-        if (data != null && data.containsKey('growthDays')) {
-          // Incrementar growthDays y actualizar lastWateringDate
-          await docRef.update({
-            'growthDays': data['growthDays'] + 1,
-            'lastWateringDate': FieldValue.serverTimestamp(),
-          });
-        } else {
-          print("El campo 'growthDays' no existe en el documento.");
+      if (!docSnapshot.exists) {
+        print("El documento del usuario no existe.");
+        return;
+      }
+
+      // Obtener las fechas de riego
+      Map<String, dynamic> data = docSnapshot.data()!;
+      if (!data.containsKey('personajeDesbloqueado')) {
+        await userDoc.update({'personajeDesbloqueado': false});
+      }
+      List<dynamic> fechasRiego = data['fechasRiego'] ?? [];
+
+      if (fechasRiego.length < 5) return;
+
+      // Convertir a DateTime y ordenar
+      List<DateTime> fechas =
+          fechasRiego.map((e) => (e as Timestamp).toDate()).toList();
+      fechas.sort();
+
+      // Verificar si son consecutivas
+      bool cincoDiasConsecutivos = true;
+      for (int i = 1; i < 5; i++) {
+        if (fechas[i].difference(fechas[i - 1]).inDays != 1) {
+          cincoDiasConsecutivos = false;
+          break;
         }
-      } else {
-        print("El documento no existe.");
+      }
+
+      if (cincoDiasConsecutivos) {
+        await userDoc.update({'personajeDesbloqueado': true});
+        int semillasActuales = data['semillas'] ?? 0;
+        await userDoc.update({'semillas': semillasActuales + 5});
+        print("¡Personaje desbloqueado!");
       }
     } catch (e) {
-      print("Error al actualizar los datos de crecimiento de la planta: $e");
+      print("Error al verificar el desbloqueo: $e");
     }
   }
 
-  Future<void> checkPlantStatus(String userId) async {
+  Future<void> registrarRiego(String userId) async {
+    try {
+      // Referencia al documento del usuario
+      final userDoc = _firestore.collection('usuarios').doc(userId);
+
+      // Obtener el documento actual
+      final docSnapshot = await userDoc.get();
+
+      if (!docSnapshot.exists) {
+        print("El documento del usuario no existe.");
+        return;
+      }
+
+      // Obtener las fechas de riego
+      final data = docSnapshot.data();
+      List<dynamic> fechasRiego = data?['fechasRiego'] ?? [];
+
+      // Verificar si ya regó hoy
+      DateTime hoy = DateTime.now();
+      if (fechasRiego.isNotEmpty) {
+        DateTime ultimaFecha = (fechasRiego.last as Timestamp).toDate();
+        if (hoy.difference(ultimaFecha).inDays == 0) {
+          print("Ya regaste hoy.");
+          return;
+        }
+      }
+
+      // Agregar la fecha de riego actual
+      fechasRiego.add(Timestamp.fromDate(hoy));
+      await userDoc.update({'fechasRiego': fechasRiego});
+
+      // Verificar desbloqueo del personaje
+      await verificarDesbloqueo(userId);
+
+      print("Riego registrado correctamente.");
+    } catch (e) {
+      print("Error al registrar el riego: $e");
+    }
+  }
+
+  Future<void> checkPlantStatus(String userId, BuildContext context) async {
     try {
       final userDoc =
           FirebaseFirestore.instance.collection('usuarios').doc(userId);
@@ -130,7 +193,14 @@ class FirestoreService {
         return;
       }
 
-      final DateTime lastWatered = DateTime.parse(plantData['lastWatered']);
+      final dynamic lastWateredRaw = plantData['lastWateringDate'];
+
+      if (lastWateredRaw == null || lastWateredRaw is! Timestamp) {
+        print('El campo lastWatered es null o no es un Timestamp válido.');
+        return; // Maneja el caso según sea necesario
+      }
+
+      final DateTime lastWatered = (lastWateredRaw).toDate();
       final DateTime now = DateTime.now();
       final DateTime yesterday = now.subtract(Duration(days: 1));
 
@@ -146,6 +216,18 @@ class FirestoreService {
           print('La planta ha muerto.');
           await plantDoc.update({'isAlive': false});
           await userDoc.update({'plantaActiva': null});
+          Navigator.push(
+    context, // Necesitas pasar el contexto desde el widget que llama a esta función
+    MaterialPageRoute(
+      builder: (context) => CharacterScreen(
+        imagePath: 'assets/images/gato_sam.png', // Cambia por la ruta de tu imagen
+        text: 'Tu planta se ha secado. ¿Intentamos de nuevo? \n ¡No te rindas!',
+        onActionCompleted: () {
+          Navigator.pop(context); // Vuelve a la pantalla anterior
+        },
+      ),
+    ),
+  );
           return;
         }
       }
@@ -156,8 +238,8 @@ class FirestoreService {
 
       // Actualizar datos del usuario
       await actualizarMayorDiasLogrados(userId, diasActuales);
-      await actualizarSemillas(
-          userId, 10); // Ejemplo: 10 semillas ganadas por riego
+      /* await actualizarSemillas(
+          userId, 10);  */ // Ejemplo: 10 semillas ganadas por riego
 
       print('Estado de la planta actualizado. Días actuales: $diasActuales.');
     } catch (e) {
@@ -256,45 +338,108 @@ class FirestoreService {
       print('Error al actualizar semillas: $e');
     }
   }
-  Future<void> convertirSemillasAProtectores(String userId) async {
-  try {
-    final userDoc = FirebaseFirestore.instance.collection('usuarios').doc(userId);
-    final userSnapshot = await userDoc.get();
 
-    if (!userSnapshot.exists) {
-      print('El usuario no existe.');
-      return;
+  Future<ConversionResult> convertirSemillasAProtectores(String userId) async {
+    try {
+      final userDoc =
+          FirebaseFirestore.instance.collection('usuarios').doc(userId);
+      final userSnapshot = await userDoc.get();
+
+      if (!userSnapshot.exists) {
+        print('El usuario no existe.');
+        return ConversionResult(
+            success: false, message: 'El usuario no existe.');
+      }
+
+      final userData = userSnapshot.data() as Map<String, dynamic>;
+
+      // Obtener los valores actuales de semillas y protectores
+      final int semillasActuales = userData['semillas'] ?? 0;
+      final int protectoresActuales = userData['protectores'] ?? 0;
+
+      // Verificar si ya tiene el máximo de protectores
+      if (protectoresActuales >= 2) {
+        print('Ya tienes el máximo de 2 protectores.');
+        return ConversionResult(
+            success: false, message: 'Ya tienes el máximo de 2 protectores.');
+      }
+
+      // Verificar si el usuario tiene al menos 10 semillas
+      if (semillasActuales < 10) {
+        print('No tienes suficientes semillas para convertir.');
+        return ConversionResult(
+            success: false, message: 'No tienes suficientes semillas.');
+      }
+
+      // Actualizar semillas y protectores
+      await userDoc.update({
+        'semillas': semillasActuales - 10,
+        'protectores': protectoresActuales + 1,
+      });
+
+      print("Conversión completada: 10 semillas -> 1 saco de abono.");
+      return ConversionResult(
+          success: true, message: '¡Has ganado un saco de abono!');
+    } catch (e) {
+      print("Error al convertir semillas a protectores: $e");
+      return ConversionResult(
+          success: false, message: 'Ocurrió un error. Inténtalo nuevamente.');
+    }
+  }
+
+  Future<int> updatePlantGrowthData(
+      String userId, String? existingplantid) async {
+    final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+    // Referencia al documento del usuario
+    final docRef = _firestore
+        .collection('usuarios')
+        .doc(userId)
+        .collection('plant_growth')
+        .doc(existingplantid);
+
+    try {
+      final docSnapshot = await docRef.get();
+      if (!docSnapshot.exists) return 0;
+
+      // Incrementar días de crecimiento
+      final data = docSnapshot.data() as Map<String, dynamic>;
+      int growthDays = data['growthDays'] ?? 0;
+
+      growthDays += 1; // Incrementar los días
+      await docRef.update({
+        'growthDays': growthDays,
+        'lastWateringDate': FieldValue.serverTimestamp(),
+      });
+
+      print("Días de crecimiento actualizados.");
+
+      // Verificar desbloqueo de medallas
+      return growthDays;
+    } catch (e) {
+      print("Error al actualizar datos de crecimiento: $e");
+      return 0;
     }
 
-    final userData = userSnapshot.data() as Map<String, dynamic>;
+    /*  // Obtener el documento actual
+      final docSnapshot = await docRef.get();
 
-    // Obtener los valores actuales de semillas y protectores
-    final int semillasActuales = userData['semillas'] ?? 0;
-    final int protectoresActuales = userData['protectores'] ?? 0;
-
-    // Verificar si ya tiene el máximo de protectores
-    if (protectoresActuales >= 2) {
-      print('Ya tienes el máximo de 2 protectores.');
-      return;
-    }
-
-    // Verificar si el usuario tiene al menos 10 semillas
-    if (semillasActuales < 10) {
-      print('No tienes suficientes semillas para convertir.');
-      return;
-    }
-
-    // Actualizar semillas y protectores
-    await userDoc.update({
-      'semillas': semillasActuales - 10,
-      'protectores': protectoresActuales + 1,
-    });
-
-    print('10 semillas convertidas en 1 protector. Protectores actuales: ${protectoresActuales + 1}');
-  } catch (e) {
-    print('Error al convertir semillas a protectores: $e');
+      if (docSnapshot.exists) {
+        // Obtener datos actuales
+        final data = docSnapshot.data();
+        if (data != null && data.containsKey('growthDays')) {
+          // Incrementar growthDays y actualizar lastWateringDate
+          await docRef.update({
+            'growthDays': data['growthDays'] + 1,
+            'lastWateringDate': FieldValue.serverTimestamp(),
+          });
+        } else {
+          print("El campo 'growthDays' no existe en el documento.");
+        }
+      } else {
+        print("El documento no existe.");
+      }
+    } catch (e) {
+      print("Error al actualizar los datos de crecimiento de la planta: $e");
+    } */
   }
 }
-
-}
-
