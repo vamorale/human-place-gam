@@ -5,6 +5,7 @@ class CharacterScreen extends StatelessWidget {
   final String text;
   final VoidCallback onActionCompleted;
   final String? rewardImagePath;
+  final String? nameCharacter;
 
   const CharacterScreen({
     Key? key,
@@ -12,6 +13,7 @@ class CharacterScreen extends StatelessWidget {
     required this.text,
     required this.onActionCompleted,
     this.rewardImagePath,
+    this.nameCharacter,
   }) : super(key: key);
 
   @override
@@ -25,6 +27,15 @@ class CharacterScreen extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Image.asset(imagePath, height: 180),
+              if (nameCharacter!=null) ...{
+                SizedBox(height: 20),
+                Text(
+                  nameCharacter!,
+                  textAlign: TextAlign.center,
+                  
+                  style: TextStyle(fontSize: 20, color: Colors.yellow, fontFamily: 'sen-regular',fontWeight: FontWeight.bold),
+                ),
+              },
               SizedBox(height: 20),
               Text(
                 text,

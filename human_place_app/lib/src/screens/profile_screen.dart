@@ -730,7 +730,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       data['alcanzada'] ?? false;
                                   final int dias = int.tryParse(medalla.id) ??
                                       0; // ID como entero
-                                  final String? fechaString =
+                                  final dynamic fechaData = data['fecha'];
+                                  DateTime? fecha;
+
+                                  if (fechaData is Timestamp) {
+                                    fecha = fechaData
+                                        .toDate(); // Convertir Timestamp a DateTime
+                                  } else if (fechaData is String) {
+                                    try {
+                                      fecha = DateTime.parse(
+                                          fechaData); // Convertir String a DateTime
+                                    } catch (e) {
+                                      print(
+                                          'Error al parsear la fecha como String: $e');
+                                      fecha = null;
+                                    }
+                                  }
+                                  /* final String? fechaString =
                                       data['fecha']; // La fecha como String
                                   DateTime? fecha;
 
@@ -743,7 +759,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       fecha =
                                           null; // Si hay un error, asegúrate de manejarlo
                                     }
-                                  }
+                                  } */
                                   /* final String? fecha = data['fecha']
                                       ?.toDate()
                                       ?.toLocal()
@@ -752,10 +768,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                                   // Imagen de la medalla según el ID
                                   final Map<int, String> medallasAssets = {
-                                    1: "assets/images/badge-ovejero/badge-1-cupper.png",
-                                    3: "assets/images/badge-ovejero/badge-2-silver.png",
-                                    5: "assets/images/badge-ovejero/badge-3-gold.png",
-                                    7: "assets/images/badge-ovejero/badge-4-diamond.png",
+                                    1: "assets/images/badge-ovejero/medalla_1.png",
+                                    3: "assets/images/badge-ovejero/medalla_3.png",
+                                    5: "assets/images/badge-ovejero/medalla_5.png",
+                                    7: "assets/images/badge-ovejero/medalla_7.png",
                                   };
 
                                   final String medallaImage =
