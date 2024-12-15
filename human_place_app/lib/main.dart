@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:human_place_app/src/app.dart';
+import 'package:human_place_app/src/utils/notification_helper.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:flutter/services.dart';
 
@@ -16,6 +17,7 @@ void main() async {
   // Inicializacion con la base de datos
 
   WidgetsFlutterBinding.ensureInitialized();
+  NotificationHelper.init();
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
   await Firebase.initializeApp();
 

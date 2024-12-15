@@ -38,6 +38,8 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   // DECLARACION DE VARIABLES A UTILIZAR
 
+  bool _personajeMostrado = false;
+
   // AVATAR
   //String? _avatarPath;
 
@@ -76,12 +78,56 @@ class _MainPageState extends State<MainPage> {
   }
 
   void initState() {
-    this.getName();
-    //_loadAvatar();
     super.initState();
+    getName();
+    _checkPersonajeDesbloqueado();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkTutorialForView(context, "home");
     });
+    context.read<AppNotifier>().fetchAnimacion();
+  }
+
+  Future<void> _checkPersonajeDesbloqueado() async {
+    final prefs = await SharedPreferences.getInstance();
+    final bool personajeMostrado = prefs.getBool('personajeMostrado') ?? false;
+
+    if (!personajeMostrado) {
+      // Consulta Firestore para verificar si el personaje está desbloqueado
+      final snapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(userId)
+          .get();
+      final userData = snapshot.data() as Map<String, dynamic>?;
+      final personajeDesbloqueado = userData?['personajeDesbloqueado'] ?? false;
+
+      if (personajeDesbloqueado) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          _personajeMostrado = true; // Asegura que solo ocurra una vez
+        });
+
+        // Guarda en SharedPreferences para no mostrar nuevamente
+        prefs.setBool('personajeMostrado', true);
+
+        // Navegar a la pantalla de desbloqueo del personaje
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CharacterScreen(
+                imagePath: 'assets/images/personajes/tucuquere.png',
+                text:
+                    '¡Has desbloqueado un nuevo personaje!\n Como recompensa por encontrarlo, ¡te regala 5 semillas adicionales!',
+                onActionCompleted: () {
+                  Navigator.pop(context); // Volver a la pantalla anterior
+                },
+                rewardImagePath: "assets/images/planta/semilla.png",
+                nameCharacter: "Magu, el tucúquere.",
+              ),
+            ),
+          );
+        });
+      }
+    }
   }
 
 /*   Future<void> _loadAvatar() async {
@@ -120,7 +166,6 @@ class _MainPageState extends State<MainPage> {
     userName = uid;
     print(userName);
   }
-  bool _personajeMostrado = false;
 
   @override
   Widget build(BuildContext context) {
@@ -144,8 +189,6 @@ class _MainPageState extends State<MainPage> {
       activeColorGradLight = CustomColors.newPinkSecondary;
       activeColorGradDark = CustomColors.newPurpleSecondary;
     }
-
-    context.read<AppNotifier>().fetchAnimacion();
 
     return Consumer<AppNotifier>(
       builder: (context, state, _) {
@@ -403,10 +446,12 @@ class _MainPageState extends State<MainPage> {
                           bool personajeDesbloqueado =
                               userData?['personajeDesbloqueado'] ?? false;
                           if (personajeDesbloqueado && !_personajeMostrado) {
-          _personajeMostrado = true; // Evitar mostrar múltiples veces
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              _checkPersonajeDesbloqueado();
+                            });
 
-          // Mostrar CharacterScreen
-          Future.microtask(() {
+                            // Mostrar CharacterScreen
+                            /* Future.microtask(() {
             Navigator.push(
               context,
               MaterialPageRoute(
@@ -421,7 +466,7 @@ class _MainPageState extends State<MainPage> {
                 ),
               ),
             );
-          });
+          } */
                           }
                           return Visibility(
                             visible: personajeDesbloqueado,

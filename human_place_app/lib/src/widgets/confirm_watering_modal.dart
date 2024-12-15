@@ -68,7 +68,7 @@ void mostrarConfirmacionRiegoModal(
                         onActionCompleted: () {
                           Navigator.pop(context); // Volver a la pantalla anterior
                         },
-                        rewardImagePath: 'assets/images/gato_sam.png', // Opcional, si quieres mostrar una imagen de recompensa
+                        rewardImagePath: 'assets/images/planta/riego.png', // Opcional, si quieres mostrar una imagen de recompensa
                       ),
                     ),
                   );

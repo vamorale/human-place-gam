@@ -98,7 +98,7 @@ class _TimerWidgetState extends State<TimerWidget> {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
+        /* Text(
           "Tiempo restante:",
           style: TextStyle(
             fontSize: 16, 
@@ -106,7 +106,7 @@ class _TimerWidgetState extends State<TimerWidget> {
             color: Colors.lightGreen, // Color del texto (estilo digital)
             fontFamily: "sen-regular",
             ),
-        ),
+        ), */
         Text(
           "${_remainingTime.inMinutes}:${(_remainingTime.inSeconds % 60).toString().padLeft(2, '0')}",
           style: TextStyle(fontSize: 30, color: Colors.white, fontFamily: 'sen-regular'),
