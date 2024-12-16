@@ -6,6 +6,8 @@ import 'package:human_place_app/src/app.dart';
 import 'package:human_place_app/src/utils/notification_helper.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:human_place_app/src/providers/user_notifier.dart';
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   await Firebase.initializeApp();
@@ -30,5 +32,12 @@ void main() async {
     ..maskType = EasyLoadingMaskType.custom
     ..maskColor = Colors.black.withOpacity(0.4);
 
-  runApp(MyApp(eventBus: _eventBus));
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => UserNotifier()),
+      ],
+      child: MyApp(eventBus: _eventBus),
+    ),
+  );
 }

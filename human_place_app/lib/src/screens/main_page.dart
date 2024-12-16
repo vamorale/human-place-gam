@@ -17,6 +17,7 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../logic/tutorial_logic.dart';
 import '../screens/character_screen.dart';
+import '../utils/avatar_state.dart';
 //import 'package:rive/rive.dart' as rive;
 
 enum StateDay { Day, Night }
@@ -83,6 +84,7 @@ class _MainPageState extends State<MainPage> {
     getName();
     getAvatar();
     _checkPersonajeDesbloqueado();
+    
     WidgetsBinding.instance.addPostFrameCallback((_) {
       checkTutorialForView(context, "home");
     });
@@ -92,6 +94,8 @@ class _MainPageState extends State<MainPage> {
   Future<void> _checkPersonajeDesbloqueado() async {
     final prefs = await SharedPreferences.getInstance();
     final bool personajeMostrado = prefs.getBool('personajeMostrado') ?? false;
+
+    if (personajeMostrado) return;
 
     if (!personajeMostrado) {
       // Consulta Firestore para verificar si el personaje está desbloqueado
@@ -103,10 +107,7 @@ class _MainPageState extends State<MainPage> {
       final personajeDesbloqueado = userData?['personajeDesbloqueado'] ?? false;
 
       if (personajeDesbloqueado && !_personajeMostrado) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          /* setState(() {
-            _personajeMostrado = true; // Asegura que solo ocurra una vez
-          }); */
+        
           if (mounted) {
             setState(() {
               _personajeMostrado = true;
@@ -133,7 +134,7 @@ class _MainPageState extends State<MainPage> {
               ),
             ),
           );
-        });});
+        });
       }
     }
   }
@@ -144,9 +145,11 @@ class _MainPageState extends State<MainPage> {
       .get();
   final userData = snapshot.data() as Map<String, dynamic>?;
   if (mounted) {
-    setState(() {
-      avatarUrl = userData?['avatar'];
-    });
+    if (userData != null)
+      AvatarState.avatarUrl = userData['avatar'] ?? '';
+      setState(() {
+        avatarUrl = userData?['avatar'];
+      });
   }
 }
 
@@ -214,7 +217,7 @@ class _MainPageState extends State<MainPage> {
       builder: (context, state, _) {
         // SE CARGAN LAS ANIMACIONES
 
-        if (state.hasLoading(AppAction.FetchMedia) == true) {
+        /* if (state.hasLoading(AppAction.FetchMedia) == true) {
           return const Text('');
         }
         if (state.hasError(AppAction.FetchMedia) == true) {
@@ -233,7 +236,7 @@ class _MainPageState extends State<MainPage> {
         }
         //Se precarga la imagen de la nuve para la galeria de plantas
         precacheImage(AssetImage("assets/images/Cloud.png"), context);
-        precacheImage(AssetImage("assets/images/CloudNight.png"), context);
+        precacheImage(AssetImage("assets/images/CloudNight.png"), context); */
 
         // WITGET INICIAL
 
@@ -284,11 +287,11 @@ class _MainPageState extends State<MainPage> {
                           onPressed: ()  async {
                             await Navigator.pushNamed(
                                 context, ProfileScreen.routerName);
-                                getAvatar();
+                                setState(() {});
                           },
                           icon: avatarUrl != null
                               ? CircleAvatar(
-                                  backgroundImage: NetworkImage(avatarUrl!),
+                                  backgroundImage: NetworkImage(AvatarState.avatarUrl),
                                   radius: 50,
                                 )
                               : CircleAvatar(
@@ -454,7 +457,7 @@ class _MainPageState extends State<MainPage> {
                             )),
                       ),
  */
-                      StreamBuilder<DocumentSnapshot>(
+                      /* StreamBuilder<DocumentSnapshot>(
                         stream: FirebaseFirestore.instance
                             .collection('usuarios')
                             .doc(userId)
@@ -466,8 +469,8 @@ class _MainPageState extends State<MainPage> {
                               snapshot.data!.data() as Map<String, dynamic>?;
 
                           bool personajeDesbloqueado =
-                              userData?['personajeDesbloqueado'] ?? false;
-                          if (personajeDesbloqueado && !_personajeMostrado) {
+                              userData?['personajeDesbloqueado'] ?? false; */
+                          /* if (personajeDesbloqueado && !_personajeMostrado) {
                             /*  WidgetsBinding.instance.addPostFrameCallback((_) {
                               _checkPersonajeDesbloqueado();
                             }); */
@@ -475,7 +478,7 @@ class _MainPageState extends State<MainPage> {
                               if (mounted) {
                                 _checkPersonajeDesbloqueado();
                               }
-                            });
+                            }); */
 
                             // Mostrar CharacterScreen
                             /* Future.microtask(() {
@@ -494,10 +497,13 @@ class _MainPageState extends State<MainPage> {
               ),
             );
           } */
-                          }
-                          return Visibility(
+                         /*  } */
+                          /* return 
+                          Visibility(
                             visible: personajeDesbloqueado,
-                            child: Positioned(
+                            child:  */
+                            if(!_personajeMostrado)
+                            Positioned(
                               left: 10,
                               top: MediaQuery.of(context).size.height / 5,
                               child: Container(
@@ -506,9 +512,6 @@ class _MainPageState extends State<MainPage> {
                                     "assets/images/personajes/tucuquere.png"),
                               ),
                             ),
-                          );
-                        },
-                      ),
                       //LISTA DE ESPACIOS INTERACTUABLES DEL PAISAJE
                       //NOTA: ESTA LISTA CONTIENE EL MENSAJE DE SAM
 
@@ -516,6 +519,7 @@ class _MainPageState extends State<MainPage> {
                         width: size.width,
                         height: size.height,
                         child: Column(
+                          key: mainButtonsKey,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             // ESPACIO INTERACTUABLE DEL PAISAJE
@@ -775,7 +779,7 @@ class _MainPageState extends State<MainPage> {
                                     color: Colors.white,
                                   ),
                                   label: Text(
-                                    '¡Hola, ' + userName + '!',
+                                    userName != null ? '¡Hola, ' + userName + '!' : '¡Hola!',
                                     style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 20,

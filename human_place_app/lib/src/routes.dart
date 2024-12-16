@@ -5,8 +5,8 @@ import 'package:human_place_app/src/screens/intro_slider.dart';
 import 'package:human_place_app/src/screens/login_screen.dart';
 import 'package:human_place_app/src/screens/main_page.dart';
 import 'package:human_place_app/src/screens/about_app.dart';
-import 'package:human_place_app/src/screens/pages/Guide_page.dart';
-import 'package:human_place_app/src/screens/plants-gallery.dart';
+//import 'package:human_place_app/src/screens/pages/Guide_page.dart';
+//import 'package:human_place_app/src/screens/plants-gallery.dart';
 import 'package:human_place_app/src/screens/splash_screen.dart';
 import 'package:human_place_app/src/screens/profile_screen.dart';
 
@@ -25,8 +25,8 @@ final routes = {
   HomeScreen.routerName: (BuildContext context) => HomeScreen(index, mode),
   MainPage.routerName: (BuildContext context) => MainPage(),
   AboutPage.routerName: (BuildContext context) => AboutPage(),
-  GaleriaPlantas.routerName: (BuildContext context) => GaleriaPlantas(),
-  GuidePage.routerName: (BuildContext context) => GuidePage(),
+  //GaleriaPlantas.routerName: (BuildContext context) => GaleriaPlantas(),
+  //GuidePage.routerName: (BuildContext context) => GuidePage(),
   ProfileScreen.routerName: (BuildContext context) => ProfileScreen(),
   HabitScreen.routerName: (BuildContext context) => HabitScreen()
 };

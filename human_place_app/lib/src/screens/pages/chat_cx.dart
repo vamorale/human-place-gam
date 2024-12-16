@@ -477,7 +477,8 @@ class _BottomWidgetState extends State<BottomWidget> {
               ])),
           child: ElevatedButton(
             onPressed: () {
-              Navigator.of(context).pushReplacementNamed(MainPage.routerName);
+              //Navigator.of(context).pushReplacementNamed(MainPage.routerName);
+              Navigator.pop(context);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.transparent,
