@@ -100,8 +100,8 @@ class _HabitScreenState extends State<HabitScreen> {
 
       // Programar la notificación
       NotificationHelper.scheduleNotification(
-        "¡Hora de regar!",
-        "Riega tu planta y fortalece tu hábito. ¡Cualquier momento es bueno para avanzar!",
+        "¡Hora de cuidar tu planta!",
+        "Riega y fortalece tu hábito. ¡Sigue avanzando!",
         duration,
       );
 
@@ -309,6 +309,7 @@ class _HabitScreenState extends State<HabitScreen> {
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
     return Scaffold(
+        resizeToAvoidBottomInset: false,
         backgroundColor: Color.fromARGB(255, 1, 49, 26),
         appBar: AppBar(
           backgroundColor: Color.fromARGB(255, 1, 49, 26),
@@ -835,7 +836,7 @@ class _HabitScreenState extends State<HabitScreen> {
                           style: TextStyle(
                               color: Colors.white,
                               fontSize: 16,
-                              fontFamily: 'Chalkboard',
+                              fontFamily: 'sen-regular',
                               fontWeight: FontWeight.bold),
                         ),
                         Text(
@@ -843,7 +844,7 @@ class _HabitScreenState extends State<HabitScreen> {
                           style: TextStyle(
                               color: Colors.white,
                               fontSize: 26,
-                              fontFamily: 'Chalkboard',
+                              fontFamily: 'sen-regular',
                               fontWeight: FontWeight.bold),
                         ),
                         SizedBox(height: 2),
@@ -863,8 +864,9 @@ class _HabitScreenState extends State<HabitScreen> {
                                 child: Text(
                                   "Configurar hora",
                                   style: TextStyle(
-                                    fontFamily: 'Chalkboard',
+                                    fontFamily: 'sen-regular',
                                     color: Colors.black,
+                                    //fontWeight: FontWeight.bold
                                   ),
                                 ),
                               ),
@@ -886,8 +888,9 @@ class _HabitScreenState extends State<HabitScreen> {
                                 child: Text(
                                   "Cancelar Notif.",
                                   style: TextStyle(
-                                    fontFamily: 'Chalkboard',
+                                    fontFamily: 'sen-regular',
                                     color: Colors.black,
+                                    //fontWeight: FontWeight.bold
                                   ),
                                 ),
                               ),

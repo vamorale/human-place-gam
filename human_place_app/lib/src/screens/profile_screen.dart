@@ -7,6 +7,7 @@ import 'package:human_place_app/src/colors.dart';
 import 'package:human_place_app/src/screens/main_page.dart';
 import 'package:http/http.dart' as http;
 import '../logic/tutorial_logic.dart';
+import '../utils/avatar_state.dart';
 
 final GlobalKey profileButtonKey = GlobalKey();
 final GlobalKey medalSection = GlobalKey();
@@ -156,6 +157,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         .collection('usuarios')
         .doc(uid)
         .update({'avatar': avatarUrl});
+
+    AvatarState.updateAvatar(avatarUrl);
   }
 
   void _showAvatarDialog() async {
@@ -229,10 +232,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
 
     if (selected != null) {
-      setState(() {
+      /* setState(() {
         _selectedAvatar = selected;
-      });
+      }); */
       await _saveSelectedAvatar(selected); // Guardar el avatar seleccionado
+      //Navigator.pop(context);
     }
   }
 
@@ -241,17 +245,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: Colors.pinkAccent,
+        //backgroundColor: Colors.pinkAccent,
         title: Text(
           "Editar $field",
-          style: const TextStyle(color: Colors.white),
+          style: const TextStyle(color: Colors.black),
         ),
         content: TextField(
             autofocus: true,
-            style: TextStyle(color: Colors.white),
+            style: TextStyle(color: Colors.black),
             decoration: InputDecoration(
                 hintText: "Ingresa el nuevo $field",
-                hintStyle: TextStyle(color: Colors.black)),
+                hintStyle: TextStyle(color: Colors.black54)),
             onChanged: (value) {
               newValue = value;
             }),
@@ -259,14 +263,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             child: Text(
               'Cancelar',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Colors.black),
             ),
             onPressed: () => Navigator.pop(context),
           ),
           TextButton(
             child: Text(
               'Guardar',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Colors.purple),
             ),
             onPressed: () => Navigator.of(context).pop(newValue),
           ),
@@ -284,8 +288,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Size size = MediaQuery.of(context).size;
 
     return Scaffold(
-        backgroundColor: Colors.purple[900],
+        //backgroundColor: Colors.purple[900],
         resizeToAvoidBottomInset: false,
+        extendBodyBehindAppBar: true,
         appBar: AppBar(
           centerTitle: true,
           title: SizedBox(
@@ -301,6 +306,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           automaticallyImplyLeading: false,
+          
           backgroundColor: Colors.transparent,
           toolbarHeight: 60,
           elevation: 0,
@@ -313,11 +319,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 backgroundColor: Colors.transparent,
                 elevation: 0,
                 onPressed: () {
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    MainPage.routerName,
-                    (route) => false,
-                  );
+                  Navigator.pop(context);
                 },
                 child: Container(
                   width: 50,
@@ -339,7 +341,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
-        body: StreamBuilder<DocumentSnapshot>(
+        body: Stack(
+          children: [
+            Container(
+          //alignment: Alignment.bottomCenter,
+          decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft, // Punto inicial del degradado
+            end: Alignment.bottomRight, // Punto final del degradado
+            colors: [
+              Colors.pink, // Primer color
+              Colors.purple, // Segundo color
+            ],
+          ),
+        ),
+            ),
+            SafeArea(
+              child: Column(
+                children: [
+                  //SizedBox(height: 50,),
+          StreamBuilder<DocumentSnapshot>(
             stream: FirebaseFirestore.instance
                 .collection("usuarios")
                 .doc(uid)
@@ -484,31 +505,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ],
                     ),
-                    /* Container(
-                      margin: EdgeInsets.all(10),
-                      width: size.width,
-                      child: RichText(
-                        textAlign: TextAlign.center,
-                        text: TextSpan(children: <TextSpan>[
-                          TextSpan(
-                            text: "Correo en uso:\n",
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 20,
-                                fontFamily: 'sen-regular',
-                                fontWeight: FontWeight.bold),
-                          ),
-                          TextSpan(
-                            text: user?.email,
-                            style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold),
-                          )
-                        ]),
-                      ),
-                    ),
-                     */
                     const Divider(
                       height: 10,
                       thickness: 1,
@@ -552,150 +548,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   fontFamily: 'sen-regular'),
                             ),
                           ),
-                          /* Row(
-                            children: <Widget>[
-                              //Medalla cobre
-                              Expanded(
-                                child: Tooltip(
-                                  message: 'Alcanza 1 día de práctica',
-                                  decoration: BoxDecoration(
-                                      color: Colors.deepPurpleAccent,
-                                      borderRadius:
-                                          BorderRadius.all(Radius.circular(5))),
-                                  triggerMode: TooltipTriggerMode.tap,
-                                  height: 20,
-                                  margin: EdgeInsets.all(10),
-                                  preferBelow: true,
-                                  showDuration: Duration(seconds: 2),
-                                  child: Stack(
-                                    children: [
-                                      CircleAvatar(
-                                        backgroundImage: AssetImage(
-                                            "assets/images/badge-ovejero/badge-1-cupper.png"),
-                                        foregroundColor: Colors.black,
-                                        radius: 35,
-                                      ),
-                                      Container(
-                                        width: 70, // Tamaño del CircleAvatar
-                                        height: 70,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Colors.black.withOpacity(
-                                              0.9), // Oscurecer con gris
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              //Medalla plata
-                              Expanded(
-                                child: Tooltip(
-                                  message: 'Alcanza 3 días de práctica',
-                                  decoration: BoxDecoration(
-                                      color: Colors.deepPurpleAccent,
-                                      borderRadius:
-                                          BorderRadius.all(Radius.circular(5))),
-                                  triggerMode: TooltipTriggerMode.tap,
-                                  height: 20,
-                                  margin: EdgeInsets.all(10),
-                                  preferBelow: true,
-                                  showDuration: Duration(seconds: 2),
-                                  child: Stack(
-                                    children: [
-                                      CircleAvatar(
-                                        backgroundImage: AssetImage(
-                                            "assets/images/badge-ovejero/badge-2-silver.png"),
-                                        foregroundColor: Colors.black,
-                                        radius: 35,
-                                      ),
-                                      Container(
-                                        width: 70, // Tamaño del CircleAvatar
-                                        height: 70,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Colors.black.withOpacity(
-                                              0.9), // Oscurecer con gris
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              //Medalla oro
-                              Expanded(
-                                child: Tooltip(
-                                  message: 'Alcanza 5 días de práctica',
-                                  decoration: BoxDecoration(
-                                      color: Colors.deepPurpleAccent,
-                                      borderRadius:
-                                          BorderRadius.all(Radius.circular(5))),
-                                  triggerMode: TooltipTriggerMode.tap,
-                                  height: 20,
-                                  margin: EdgeInsets.all(10),
-                                  preferBelow: true,
-                                  showDuration: Duration(seconds: 2),
-                                  child: Stack(
-                                    children: [
-                                      CircleAvatar(
-                                        backgroundImage: AssetImage(
-                                            "assets/images/badge-ovejero/badge-3-gold.png"),
-                                        foregroundColor: Colors.black,
-                                        radius: 35,
-                                      ),
-                                      Container(
-                                        width: 70, // Tamaño del CircleAvatar
-                                        height: 70,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Colors.black.withOpacity(
-                                              0.9), // Oscurecer con gris
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-
-                              //Medalla diamante
-                              Expanded(
-                                child: Tooltip(
-                                  message: 'Alcanza 7 días de práctica',
-                                  decoration: BoxDecoration(
-                                      color: Colors.deepPurpleAccent,
-                                      borderRadius:
-                                          BorderRadius.all(Radius.circular(5))),
-                                  triggerMode: TooltipTriggerMode.tap,
-                                  height: 20,
-                                  margin: EdgeInsets.all(10),
-                                  preferBelow: true,
-                                  showDuration: Duration(seconds: 2),
-                                  child: Stack(
-                                    children: [
-                                      CircleAvatar(
-                                        backgroundImage: AssetImage(
-                                            "assets/images/badge-ovejero/badge-4-diamond.png"),
-                                        foregroundColor: Colors.black,
-                                        radius: 35,
-                                      ),
-                                      Container(
-                                        width: 70, // Tamaño del CircleAvatar
-                                        height: 70,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          color: Colors.black.withOpacity(
-                                              0.9), // Oscurecer con gris
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                         */
                           StreamBuilder<QuerySnapshot>(
                             stream: FirebaseFirestore.instance
                                 .collection('usuarios')
@@ -746,25 +598,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                       fecha = null;
                                     }
                                   }
-                                  /* final String? fechaString =
-                                      data['fecha']; // La fecha como String
-                                  DateTime? fecha;
-
-                                  if (fechaString != null) {
-                                    try {
-                                      fecha = DateTime.parse(
-                                          fechaString); // Convierte el String a DateTime
-                                    } catch (e) {
-                                      print('Error al parsear la fecha: $e');
-                                      fecha =
-                                          null; // Si hay un error, asegúrate de manejarlo
-                                    }
-                                  } */
-                                  /* final String? fecha = data['fecha']
-                                      ?.toDate()
-                                      ?.toLocal()
-                                      ?.toString();
- */
 
                                   // Imagen de la medalla según el ID
                                   final Map<int, String> medallasAssets = {
@@ -834,6 +667,5 @@ class _ProfileScreenState extends State<ProfileScreen> {
               return const Center(
                 child: CircularProgressIndicator(),
               );
-            }));
-  }
-}
+            })]))]));
+}}

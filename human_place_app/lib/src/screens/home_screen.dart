@@ -73,11 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   backgroundColor: Colors.transparent,
                   elevation: 0,
                   onPressed: () {
-                    Navigator.pushNamedAndRemoveUntil(
-                      context,
-                      MainPage.routerName,
-                      (route) => false,
-                    );
+                    Navigator.pop(context);
                   },
                   child: Container(
                     width: 50,

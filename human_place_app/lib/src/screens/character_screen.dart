@@ -19,8 +19,24 @@ class CharacterScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.deepPurple[900], // Fondo traslúcido negro
-      body: Center(
+      extendBodyBehindAppBar: true,
+      //backgroundColor: Colors.deepPurple[900],
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Colors.blueAccent,
+            Colors.deepPurpleAccent,
+          ],
+        ),
+      ),
+          ),
+      SafeArea(
+        child: Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(
@@ -89,6 +105,6 @@ class CharacterScreen extends StatelessWidget {
           ],
         ),
        */),
-    );
+    )]));
   }
 }
